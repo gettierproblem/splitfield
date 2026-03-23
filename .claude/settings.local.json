@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:obscuritory.com)",
+      "WebFetch(domain:gamefaqs.gamespot.com)",
+      "WebFetch(domain:en-academic.com)",
+      "WebFetch(domain:macintoshrepository.org)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:macintoshgarden.org)",
+      "WebFetch(domain:www.giantbomb.com)",
+      "WebFetch(domain:kittenm4ster.itch.io)",
+      "WebFetch(domain:www.thefullwiki.org)",
+      "WebFetch(domain:macdownload.informer.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(git init:*)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(curl -sL \"https://raw.githubusercontent.com/gzuidhof/coi-serviceworker/main/coi-serviceworker.min.js\" -o build/web/coi-serviceworker.min.js)",
+      "Bash(curl -sL \"https://raw.githubusercontent.com/nickvdp/coi-serviceworker/main/coi-serviceworker.js\" -o /dev/null -w \"%{http_code}\")",
+      "Bash(curl -sL \"https://raw.githubusercontent.com/nickvdp/coi-serviceworker/main/coi-serviceworker.js\")",
+      "Bash(curl:*)",
+      "Bash(gh api:*)",
+      "Bash(python3 -c \"import sys,json; [print\\(f[''''name'''']\\) for f in json.loads\\(sys.stdin.read\\(\\)\\)]\")",
+      "Bash(python3 -c \"import sys,json; [print\\(r[''''ref'''']\\) for r in json.loads\\(sys.stdin.read\\(\\)\\)]\")",
+      "Bash(git:*)",
+      "Bash(find /c/Users/Verit/barrack/Scripts -name \"*.cs.uid\" -delete)",
+      "Bash(gh repo:*)",
+      "Bash(gh run:*)",
+      "Bash(\"/c/Users/Verit/AppData/Local/Microsoft/WinGet/Packages/GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe/Godot_v4.6.1-stable_win64_console.exe\" --headless --export-release \"Web\" \"build/web/index.html\" --path \"C:/Users/Verit/barrack\")"
+    ]
+  }
+}

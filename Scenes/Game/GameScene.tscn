@@ -1,0 +1,480 @@
+[gd_scene load_steps=11 format=3 uid="uid://game_scene"]
+
+[ext_resource type="Script" path="res://Scripts/UI/GameScene.gd" id="1"]
+[ext_resource type="Script" path="res://Scripts/Field/PlayingField.gd" id="2"]
+[ext_resource type="Script" path="res://Scripts/UI/HUD.gd" id="3"]
+[ext_resource type="Script" path="res://Scripts/UI/PauseMenu.gd" id="4"]
+[ext_resource type="Script" path="res://Scripts/UI/GameOverScreen.gd" id="5"]
+[ext_resource type="Script" path="res://Scripts/UI/LevelCompleteOverlay.gd" id="6"]
+[ext_resource type="Shader" path="res://Assets/Shaders/psychedelic_bg.gdshader" id="7"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_bg"]
+shader = ExtResource("7")
+shader_parameter/time_scale = 0.5
+shader_parameter/color_intensity = 0.8
+shader_parameter/plasma_scale = 8.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gameover"]
+bg_color = Color(0.1, 0.1, 0.15, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.3, 0.3, 0.4, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_levelcomplete"]
+bg_color = Color(0.1, 0.1, 0.15, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.3, 0.3, 0.4, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[node name="GameScene" type="Node2D"]
+script = ExtResource("1")
+
+[node name="PlayingField" type="Node2D" parent="."]
+position = Vector2(8, 24)
+script = ExtResource("2")
+
+[node name="ActiveBeam" type="Node2D" parent="PlayingField"]
+
+[node name="Barriers" type="Node2D" parent="PlayingField"]
+
+[node name="FilledAreas" type="Node2D" parent="PlayingField"]
+
+[node name="Balls" type="Node2D" parent="PlayingField"]
+
+[node name="PowerUps" type="Node2D" parent="PlayingField"]
+
+[node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("3")
+
+[node name="HUDPanel" type="Panel" parent="HUD"]
+offset_left = 816.0
+offset_top = 0.0
+offset_right = 1024.0
+offset_bottom = 768.0
+mouse_filter = 2
+
+[node name="TitleLabel" type="Label" parent="HUD/HUDPanel"]
+layout_mode = 1
+offset_left = 8.0
+offset_top = 12.0
+offset_right = 200.0
+offset_bottom = 44.0
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
+text = "SPLITFIELD"
+horizontal_alignment = 1
+
+[node name="Separator1" type="HSeparator" parent="HUD/HUDPanel"]
+layout_mode = 1
+offset_left = 8.0
+offset_top = 50.0
+offset_right = 200.0
+offset_bottom = 54.0
+
+[node name="ScoreLabel" type="Label" parent="HUD/HUDPanel"]
+layout_mode = 1
+offset_left = 8.0
+offset_top = 65.0
+offset_right = 200.0
+offset_bottom = 85.0
+theme_override_font_sizes/font_size = 14
+text = "Score: 0"
+
+[node name="LivesLabel" type="Label" parent="HUD/HUDPanel"]
+layout_mode = 1
+offset_left = 8.0
+offset_top = 100.0
+offset_right = 200.0
+offset_bottom = 120.0
+theme_override_font_sizes/font_size = 14
+text = "Lives: 5"
+
+[node name="LevelLabel" type="Label" parent="HUD/HUDPanel"]
+layout_mode = 1
+offset_left = 8.0
+offset_top = 135.0
+offset_right = 200.0
+offset_bottom = 155.0
+theme_override_font_sizes/font_size = 14
+text = "Level 1"
+
+[node name="Separator2" type="HSeparator" parent="HUD/HUDPanel"]
+layout_mode = 1
+offset_left = 8.0
+offset_top = 170.0
+offset_right = 200.0
+offset_bottom = 174.0
+
+[node name="FillLabel" type="Label" parent="HUD/HUDPanel"]
+layout_mode = 1
+offset_left = 8.0
+offset_top = 185.0
+offset_right = 200.0
+offset_bottom = 215.0
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.3, 1, 0.3, 1)
+text = "Fill: 0.0%"
+
+[node name="RequirementLabel" type="Label" parent="HUD/HUDPanel"]
+layout_mode = 1
+offset_left = 8.0
+offset_top = 220.0
+offset_right = 200.0
+offset_bottom = 240.0
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.6, 0.6, 0.7, 1)
+text = "Need 80% to clear"
+
+[node name="TimedBonusLabel" type="Label" parent="HUD/HUDPanel"]
+layout_mode = 1
+offset_left = 8.0
+offset_top = 250.0
+offset_right = 200.0
+offset_bottom = 280.0
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.3, 1, 0.3, 1)
+text = "Bonus: 4,000"
+
+[node name="MultiplierLabel" type="Label" parent="HUD/HUDPanel"]
+visible = false
+layout_mode = 1
+offset_left = 8.0
+offset_top = 295.0
+offset_right = 200.0
+offset_bottom = 325.0
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(1, 1, 0, 1)
+text = "x1.0"
+
+[node name="Separator3" type="HSeparator" parent="HUD/HUDPanel"]
+layout_mode = 1
+offset_left = 8.0
+offset_top = 340.0
+offset_right = 200.0
+offset_bottom = 344.0
+
+[node name="WeaponLabel" type="Label" parent="HUD/HUDPanel"]
+layout_mode = 1
+offset_left = 8.0
+offset_top = 355.0
+offset_right = 200.0
+offset_bottom = 375.0
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0, 0.9, 1, 1)
+text = "Weapon: Laser Cartridge"
+
+[node name="OrientationLabel" type="Label" parent="HUD/HUDPanel"]
+layout_mode = 1
+offset_left = 8.0
+offset_top = 385.0
+offset_right = 200.0
+offset_bottom = 405.0
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.7, 0.7, 0.8, 1)
+text = "Direction: Horizontal"
+
+[node name="Separator4" type="HSeparator" parent="HUD/HUDPanel"]
+layout_mode = 1
+offset_left = 8.0
+offset_top = 700.0
+offset_right = 200.0
+offset_bottom = 704.0
+
+[node name="ControlsLabel" type="Label" parent="HUD/HUDPanel"]
+layout_mode = 1
+offset_left = 8.0
+offset_top = 710.0
+offset_right = 200.0
+offset_bottom = 760.0
+theme_override_font_sizes/font_size = 10
+theme_override_colors/font_color = Color(0.5, 0.5, 0.6, 1)
+text = "Tab: Toggle Direction
+W: Laser Cartridge
+D: Cluster Magnet
+Click: Fire | ESC: Pause"
+
+[node name="PauseMenu" type="CanvasLayer" parent="."]
+script = ExtResource("4")
+
+[node name="PausePanel" type="Panel" parent="PauseMenu"]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -120.0
+offset_top = -100.0
+offset_right = 120.0
+offset_bottom = 100.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PauseMenu/PausePanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="PausedLabel" type="Label" parent="PauseMenu/PausePanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "PAUSED"
+horizontal_alignment = 1
+
+[node name="ResumeButton" type="Button" parent="PauseMenu/PausePanel/VBoxContainer"]
+layout_mode = 2
+text = "Resume"
+
+[node name="RestartButton" type="Button" parent="PauseMenu/PausePanel/VBoxContainer"]
+layout_mode = 2
+text = "Restart Level"
+
+[node name="QuitButton" type="Button" parent="PauseMenu/PausePanel/VBoxContainer"]
+layout_mode = 2
+text = "Quit to Menu"
+
+[node name="GameOverScreen" type="CanvasLayer" parent="."]
+script = ExtResource("5")
+
+[node name="DimOverlay" type="ColorRect" parent="GameOverScreen"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0.6)
+
+[node name="GameOverPanel" type="Panel" parent="GameOverScreen"]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = -160.0
+offset_right = 180.0
+offset_bottom = 160.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_gameover")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="GameOverScreen/GameOverPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 16.0
+offset_right = -20.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 8
+
+[node name="GameOverLabel" type="Label" parent="GameOverScreen/GameOverPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+theme_override_colors/font_color = Color(1, 0.2, 0.2, 1)
+text = "GAME OVER"
+horizontal_alignment = 1
+
+[node name="Sep1" type="HSeparator" parent="GameOverScreen/GameOverPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="FinalScoreLabel" type="Label" parent="GameOverScreen/GameOverPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
+text = "Final Score: 0"
+horizontal_alignment = 1
+
+[node name="LevelReachedLabel" type="Label" parent="GameOverScreen/GameOverPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Level Reached: 1"
+horizontal_alignment = 1
+
+[node name="LivesLabel" type="Label" parent="GameOverScreen/GameOverPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Lives Remaining: 0"
+horizontal_alignment = 1
+
+[node name="Sep2" type="HSeparator" parent="GameOverScreen/GameOverPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="TimeOutLabel" type="Label" parent="GameOverScreen/GameOverPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.7, 0.3, 0.3, 1)
+text = "Time bonus expired!"
+horizontal_alignment = 1
+
+[node name="Sep3" type="HSeparator" parent="GameOverScreen/GameOverPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="PlayAgainButton" type="Button" parent="GameOverScreen/GameOverPanel/VBoxContainer"]
+layout_mode = 2
+text = "Play Again"
+
+[node name="MainMenuButton" type="Button" parent="GameOverScreen/GameOverPanel/VBoxContainer"]
+layout_mode = 2
+text = "Main Menu"
+
+[node name="LevelCompleteOverlay" type="CanvasLayer" parent="."]
+script = ExtResource("6")
+
+[node name="LevelCompletePanel" type="Panel" parent="LevelCompleteOverlay"]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = -170.0
+offset_right = 180.0
+offset_bottom = 170.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_levelcomplete")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="LevelCompleteOverlay/LevelCompletePanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 12.0
+offset_right = -16.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 6
+
+[node name="TitleLabel" type="Label" parent="LevelCompleteOverlay/LevelCompletePanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
+text = "LEVEL 1 COMPLETE"
+horizontal_alignment = 1
+
+[node name="Sep1" type="HSeparator" parent="LevelCompleteOverlay/LevelCompletePanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="BonusAchievedLabel" type="Label" parent="LevelCompleteOverlay/LevelCompletePanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+text = "BONUS ACHIEVED"
+horizontal_alignment = 1
+
+[node name="BonusAchievedValue" type="Label" parent="LevelCompleteOverlay/LevelCompletePanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(0.3, 1, 0.3, 1)
+text = "0"
+horizontal_alignment = 1
+
+[node name="Sep2" type="HSeparator" parent="LevelCompleteOverlay/LevelCompletePanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="IsolationLabel" type="Label" parent="LevelCompleteOverlay/LevelCompletePanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+text = "ISOLATION  x1"
+horizontal_alignment = 1
+
+[node name="IsolationValue" type="Label" parent="LevelCompleteOverlay/LevelCompletePanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(0.3, 1, 0.3, 1)
+text = "0"
+horizontal_alignment = 1
+
+[node name="OverachieverLabel" type="Label" parent="LevelCompleteOverlay/LevelCompletePanel/VBoxContainer"]
+visible = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.9, 0.6, 1, 1)
+text = "OVERACHIEVER  80.0%"
+horizontal_alignment = 1
+
+[node name="OverachieverValue" type="Label" parent="LevelCompleteOverlay/LevelCompletePanel/VBoxContainer"]
+visible = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(0.9, 0.6, 1, 1)
+text = "0"
+horizontal_alignment = 1
+
+[node name="Sep3" type="HSeparator" parent="LevelCompleteOverlay/LevelCompletePanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="MultiplierLabel" type="Label" parent="LevelCompleteOverlay/LevelCompletePanel/VBoxContainer"]
+visible = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(1, 0.85, 0.2, 1)
+text = "MULTIPLIER"
+horizontal_alignment = 1
+
+[node name="MultiplierValue" type="Label" parent="LevelCompleteOverlay/LevelCompletePanel/VBoxContainer"]
+visible = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(1, 0.85, 0.2, 1)
+text = "x1"
+horizontal_alignment = 1
+
+[node name="TotalBonusLabel" type="Label" parent="LevelCompleteOverlay/LevelCompletePanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+text = "TOTAL BONUS"
+horizontal_alignment = 1
+
+[node name="TotalBonusValue" type="Label" parent="LevelCompleteOverlay/LevelCompletePanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+theme_override_colors/font_color = Color(1, 1, 0.3, 1)
+text = "0"
+horizontal_alignment = 1
+
+[node name="Sep4" type="HSeparator" parent="LevelCompleteOverlay/LevelCompletePanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="TotalScoreLabel" type="Label" parent="LevelCompleteOverlay/LevelCompletePanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
+text = "TOTAL SCORE  0"
+horizontal_alignment = 1
+
+[node name="NextLevelButton" type="Button" parent="LevelCompleteOverlay/LevelCompletePanel/VBoxContainer"]
+layout_mode = 2
+text = "Next Level"
