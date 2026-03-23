@@ -12,6 +12,9 @@ func _ready() -> void:
 
 
 func _on_game_over() -> void:
+	if GameManager.sandbox_entity != "":
+		GameManager.return_to_main_menu()
+		return
 	AudioManager.play_sfx("game_over")
 	AudioManager.stop_music()
 	visible = true

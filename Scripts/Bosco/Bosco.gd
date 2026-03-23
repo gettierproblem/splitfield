@@ -1,12 +1,11 @@
 class_name BoscoShark
 extends Node2D
 
-## Bosco the shark. Primarily patrols the playfield perimeter but
-## periodically dives through the field interior.
+## Bosco the shark. Seeks the player's cursor/ship position, phases through
+## barriers and filled areas. States: hunting, gotcha, ball_hit, rampage, tired, killed.
 
 enum BoscoState {
-	PATROLLING,
-	DIVING,
+	HUNTING,
 	GOTCHA,
 	BALL_HIT,
 	RAMPAGE,
@@ -15,25 +14,14 @@ enum BoscoState {
 }
 
 var _field: PlayingField
-var _state: int = BoscoState.PATROLLING
+var _state: int = BoscoState.HUNTING
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
-# Movement
-var _perimeter_position: float
-var _perimeter_direction: int = 1  # +1 or -1
-var _direction: Vector2  # Used during field dives
-const BASE_SPEED: float = 140.0
+# Movement — Bosco steers toward the player
+var _velocity: Vector2 = Vector2.ZERO
+const BASE_SPEED: float = 160.0
 var _speed: float = BASE_SPEED
-
-# Perimeter dimensions
-const GRID_W: int = 200
-const GRID_H: int = 184
-const TOTAL_PERIMETER: int = 2 * (GRID_W + GRID_H) - 4  # 764
-
-# Dive timing
-var _dive_timer: float
-const MIN_DIVE_INTERVAL: float = 4.0
-const MAX_DIVE_INTERVAL: float = 10.0
+const TRACKING_WEIGHT: float = 2.5  # How aggressively Bosco steers toward player
 
 # State timers
 var _state_timer: float
@@ -71,31 +59,29 @@ var in_rampage: bool:
 func initialize(field: PlayingField, start_pos: float) -> void:
 	_field = field
 	_rng.randomize()
-	_perimeter_position = start_pos
-	_state = BoscoState.PATROLLING
+	_state = BoscoState.HUNTING
 	_speed = BASE_SPEED
-	_dive_timer = _rng.randf_range(MIN_DIVE_INTERVAL, MAX_DIVE_INTERVAL)
-	global_position = _perimeter_to_world(_perimeter_position)
+	# Start at a random edge position
+	var perim_total: int = 2 * (200 + 184) - 4
+	var p: float = fmod(start_pos, float(perim_total))
+	global_position = _perimeter_to_world(p)
+	# Initial velocity aimed inward
+	var field_center: Vector2 = _field.global_position + Vector2(
+		PlayingField.FIELD_PIXEL_WIDTH * 0.5, PlayingField.FIELD_PIXEL_HEIGHT * 0.5)
+	_velocity = (field_center - global_position).normalized() * _speed
 	z_index = 4
 
 
 func _process(delta: float) -> void:
 	match _state:
-		BoscoState.PATROLLING:
-			_move_along_perimeter(delta)
-			_check_collisions()
-			_dive_timer -= delta
-			if _dive_timer <= 0:
-				_start_dive()
-
-		BoscoState.DIVING:
-			_move_through_field(delta)
+		BoscoState.HUNTING:
+			_seek_player(delta)
 			_check_collisions()
 
 		BoscoState.GOTCHA:
 			_state_timer -= delta
 			if _state_timer <= 0:
-				_set_state(BoscoState.PATROLLING)
+				_set_state(BoscoState.HUNTING)
 
 		BoscoState.BALL_HIT:
 			_state_timer -= delta
@@ -103,17 +89,18 @@ func _process(delta: float) -> void:
 				_set_state(BoscoState.RAMPAGE)
 
 		BoscoState.RAMPAGE:
-			_move_through_field(delta)
+			_seek_player(delta)
 			_check_collisions()
 			_state_timer -= delta
 			if _state_timer <= 0:
 				_set_state(BoscoState.TIRED)
 
 		BoscoState.TIRED:
-			_move_along_perimeter(delta)
+			_drift(delta)
+			_check_collisions()
 			_state_timer -= delta
 			if _state_timer <= 0:
-				_set_state(BoscoState.PATROLLING)
+				_set_state(BoscoState.HUNTING)
 
 		BoscoState.KILLED:
 			_state_timer -= delta
@@ -141,13 +128,9 @@ func _process(delta: float) -> void:
 func _set_state(new_state: int) -> void:
 	_state = new_state
 	match new_state:
-		BoscoState.PATROLLING:
+		BoscoState.HUNTING:
 			_speed = BASE_SPEED
-			_dive_timer = _rng.randf_range(MIN_DIVE_INTERVAL, MAX_DIVE_INTERVAL)
-			_perimeter_position = _world_to_perimeter(global_position)
 			AudioManager.play_sfx("bosco_patrol")
-		BoscoState.DIVING:
-			_speed = BASE_SPEED
 		BoscoState.GOTCHA:
 			_state_timer = GOTCHA_DURATION
 			_speed = 0
@@ -159,113 +142,52 @@ func _set_state(new_state: int) -> void:
 		BoscoState.RAMPAGE:
 			_state_timer = RAMPAGE_DURATION
 			_speed = BASE_SPEED * 2.0
-			var angle: float = _rng.randf_range(0, TAU)
-			_direction = Vector2(cos(angle), sin(angle))
 			AudioManager.play_sfx("bosco_rampage")
 		BoscoState.TIRED:
 			_state_timer = TIRED_DURATION
 			_speed = BASE_SPEED * 0.5
-			_perimeter_position = _world_to_perimeter(global_position)
 			AudioManager.play_sfx("bosco_tired")
 		BoscoState.KILLED:
 			_state_timer = DEATH_SPIN_DURATION
 			_speed = 0
 
 
-func _start_dive() -> void:
-	var field_center: Vector2 = _field.global_position + Vector2(
+func _get_player_position() -> Vector2:
+	if _field == null:
+		return global_position
+	for child in _field.get_children():
+		if child is CursorShip and is_instance_valid(child):
+			return child.global_position
+	# Fallback: field center
+	return _field.global_position + Vector2(
 		PlayingField.FIELD_PIXEL_WIDTH * 0.5, PlayingField.FIELD_PIXEL_HEIGHT * 0.5)
-	var to_center: Vector2 = (field_center - global_position).normalized()
-
-	var jitter: float = _rng.randf_range(-0.8, 0.8)
-	_direction = to_center.rotated(jitter).normalized()
-	_state = BoscoState.DIVING
-	_speed = BASE_SPEED
 
 
-func _move_along_perimeter(dt: float) -> void:
-	_perimeter_position += _perimeter_direction * _speed / PlayingField.CELL_SIZE * dt
-
-	if _perimeter_position >= TOTAL_PERIMETER:
-		_perimeter_position -= TOTAL_PERIMETER
-	if _perimeter_position < 0:
-		_perimeter_position += TOTAL_PERIMETER
-
-	global_position = _perimeter_to_world(_perimeter_position)
+func _seek_player(dt: float) -> void:
+	var target: Vector2 = _get_player_position()
+	var desired: Vector2 = (target - global_position).normalized() * _speed
+	_velocity = _velocity.lerp(desired, TRACKING_WEIGHT * dt)
+	global_position += _velocity * dt
+	_clamp_to_field()
 
 
-func _move_through_field(dt: float) -> void:
-	var pos: Vector2 = global_position + _direction * _speed * dt
+func _drift(dt: float) -> void:
+	# Tired: slow drift, less aggressive tracking
+	var target: Vector2 = _get_player_position()
+	var desired: Vector2 = (target - global_position).normalized() * _speed
+	_velocity = _velocity.lerp(desired, TRACKING_WEIGHT * 0.3 * dt)
+	global_position += _velocity * dt
+	_clamp_to_field()
 
-	var field_min: Vector2 = _field.global_position + Vector2(FIN_RADIUS, FIN_RADIUS)
+
+func _clamp_to_field() -> void:
+	if _field == null:
+		return
+	var field_min: Vector2 = _field.global_position + Vector2(4, 4)
 	var field_max: Vector2 = _field.global_position + Vector2(
-		PlayingField.FIELD_PIXEL_WIDTH - FIN_RADIUS, PlayingField.FIELD_PIXEL_HEIGHT - FIN_RADIUS)
-
-	var hit_edge: bool = false
-	if pos.x < field_min.x:
-		pos.x = field_min.x
-		_direction.x = absf(_direction.x)
-		hit_edge = true
-	if pos.x > field_max.x:
-		pos.x = field_max.x
-		_direction.x = -absf(_direction.x)
-		hit_edge = true
-	if pos.y < field_min.y:
-		pos.y = field_min.y
-		_direction.y = absf(_direction.y)
-		hit_edge = true
-	if pos.y > field_max.y:
-		pos.y = field_max.y
-		_direction.y = -absf(_direction.y)
-		hit_edge = true
-
-	global_position = pos
-
-	if hit_edge and _state == BoscoState.DIVING:
-		_perimeter_position = _world_to_perimeter(global_position)
-		_set_state(BoscoState.PATROLLING)
-
-
-func _perimeter_to_world(pos: float) -> Vector2:
-	pos = fmod(fmod(pos, TOTAL_PERIMETER) + TOTAL_PERIMETER, TOTAL_PERIMETER)
-
-	var grid_x: int
-	var grid_y: int
-
-	if pos < GRID_W:
-		grid_x = int(pos)
-		grid_y = 0
-	elif pos < GRID_W + GRID_H - 1:
-		grid_x = GRID_W - 1
-		grid_y = int(pos - GRID_W) + 1
-	elif pos < 2 * GRID_W + GRID_H - 2:
-		grid_x = GRID_W - 1 - int(pos - GRID_W - GRID_H + 1)
-		grid_y = GRID_H - 1
-	else:
-		grid_x = 0
-		grid_y = GRID_H - 1 - int(pos - 2 * GRID_W - GRID_H + 2)
-
-	return _field.grid_to_world(Vector2i(grid_x, grid_y))
-
-
-func _world_to_perimeter(world_pos: Vector2) -> float:
-	var grid_pos: Vector2i = _field.world_to_grid(world_pos)
-	var x: int = clampi(grid_pos.x, 0, GRID_W - 1)
-	var y: int = clampi(grid_pos.y, 0, GRID_H - 1)
-
-	var dist_top: int = y
-	var dist_bottom: int = (GRID_H - 1) - y
-	var dist_left: int = x
-	var dist_right: int = (GRID_W - 1) - x
-	var min_dist: int = mini(mini(dist_top, dist_bottom), mini(dist_left, dist_right))
-
-	if min_dist == dist_top:
-		return float(x)
-	if min_dist == dist_right:
-		return float(GRID_W + y)
-	if min_dist == dist_bottom:
-		return float(GRID_W + GRID_H - 2 + (GRID_W - 1 - x))
-	return float(2 * GRID_W + GRID_H - 3 + (GRID_H - 1 - y))
+		PlayingField.FIELD_PIXEL_WIDTH - 4, PlayingField.FIELD_PIXEL_HEIGHT - 4)
+	global_position.x = clampf(global_position.x, field_min.x, field_max.x)
+	global_position.y = clampf(global_position.y, field_min.y, field_max.y)
 
 
 func _check_collisions() -> void:
@@ -314,6 +236,28 @@ func check_if_isolated(kill_method: String = "regular") -> void:
 		trigger_death(kill_method)
 
 
+func _perimeter_to_world(pos: float) -> Vector2:
+	var grid_w: int = 200
+	var grid_h: int = 184
+	var total: int = 2 * (grid_w + grid_h) - 4
+	pos = fmod(fmod(pos, float(total)) + float(total), float(total))
+	var grid_x: int
+	var grid_y: int
+	if pos < grid_w:
+		grid_x = int(pos)
+		grid_y = 0
+	elif pos < grid_w + grid_h - 1:
+		grid_x = grid_w - 1
+		grid_y = int(pos - grid_w) + 1
+	elif pos < 2 * grid_w + grid_h - 2:
+		grid_x = grid_w - 1 - int(pos - grid_w - grid_h + 1)
+		grid_y = grid_h - 1
+	else:
+		grid_x = 0
+		grid_y = grid_h - 1 - int(pos - 2 * grid_w - grid_h + 2)
+	return _field.grid_to_world(Vector2i(grid_x, grid_y))
+
+
 func _update_ash_trail(dt: float) -> void:
 	_ash_timer -= dt
 	if _ash_timer <= 0 and _speed > 0:
@@ -329,20 +273,18 @@ func _update_ash_trail(dt: float) -> void:
 
 
 func _draw() -> void:
-	# Draw smoke trail — varies in size, drifts upward, transitions gray→transparent
+	# Draw smoke trail
 	for ash in _ash_trail:
 		var age_ratio: float = ash["age"] / ASH_LIFETIME
 		var alpha: float = (1.0 - age_ratio) * 0.4
 		var local_ash: Vector2 = ash["pos"] - global_position
-		# Drift upward and grow as they age
 		local_ash.y -= age_ratio * 4.0
 		var smoke_size: float = 1.0 + age_ratio * 2.0
 		if age_ratio > 0.5:
-			smoke_size *= (1.0 - (age_ratio - 0.5) * 1.5)  # Shrink at end
+			smoke_size *= (1.0 - (age_ratio - 0.5) * 1.5)
 		draw_circle(local_ash, maxf(0.5, smoke_size), Color(0.6, 0.6, 0.65, alpha))
 
 	if _state == BoscoState.KILLED:
-		# Spiral particle trail — yellow→red fade
 		var death_progress: float = 1.0 - _state_timer / DEATH_SPIN_DURATION
 		for i in range(6):
 			var angle: float = _rotation_angle + i * TAU / 6.0
@@ -368,10 +310,9 @@ func _draw() -> void:
 
 	_draw_fin_shape(base_color)
 
-	# Wake lines behind fin (patrolling/diving)
-	if _state == BoscoState.PATROLLING or _state == BoscoState.DIVING:
-		var move_dir: Vector2 = _direction if _direction.length() > 0.1 else Vector2(1, 0)
-		var behind: Vector2 = -move_dir.normalized()
+	# Wake lines behind fin
+	if _velocity.length() > 10.0:
+		var behind: Vector2 = -_velocity.normalized()
 		var t: float = Time.get_ticks_msec() / 300.0
 		var wake_color: Color = Color(0.5, 0.7, 0.9, 0.25)
 		for i in range(3):
@@ -380,7 +321,7 @@ func _draw() -> void:
 			var perp: Vector2 = Vector2(-behind.y, behind.x) * wave
 			draw_line(behind * offset + perp - Vector2(2, 0), behind * offset + perp + Vector2(2, 0), wake_color, 0.8)
 
-	# Water ripple at base — enhanced
+	# Water ripple at base
 	var t: float = Time.get_ticks_msec() / 400.0
 	var ripple1: float = sin(t) * 3.5
 	var ripple2: float = sin(t + 1.5) * 2.5
@@ -400,12 +341,10 @@ func _draw_fin_shape(fin_color: Color) -> void:
 	var fin_height: float = 16.0
 	var fin_width: float = 14.0
 
-	# Tired state — drooping fin
 	if _state == BoscoState.TIRED:
 		fin_height *= 0.75
 
-	# Diving state — slightly larger
-	if _state == BoscoState.DIVING:
+	if _state == BoscoState.RAMPAGE:
 		fin_height *= 1.15
 		fin_width *= 1.15
 
@@ -421,18 +360,18 @@ func _draw_fin_shape(fin_color: Color) -> void:
 	])
 	draw_polygon(shadow_fin, PackedColorArray([Color(0, 0, 0, 0.35)]))
 
-	# Organic 6-point fin shape — curved leading edge, concave trailing edge
+	# Organic 6-point fin shape
 	var fin: PackedVector2Array = PackedVector2Array([
-		Vector2(fin_width * 0.3, 0),           # Base right
-		Vector2(-fin_width * 0.3, 2),           # Base left (trailing)
-		Vector2(-fin_width * 0.45, 0),          # Trailing edge low
-		Vector2(-fin_width * 0.15, -fin_height * 0.3),  # Trailing edge mid (concave)
-		Vector2(fin_width * 0.15, -fin_height),  # Tip
-		Vector2(fin_width * 0.3, -fin_height * 0.6),  # Leading edge
+		Vector2(fin_width * 0.3, 0),
+		Vector2(-fin_width * 0.3, 2),
+		Vector2(-fin_width * 0.45, 0),
+		Vector2(-fin_width * 0.15, -fin_height * 0.3),
+		Vector2(fin_width * 0.15, -fin_height),
+		Vector2(fin_width * 0.3, -fin_height * 0.6),
 	])
 	draw_polygon(fin, PackedColorArray([fin_color]))
 
-	# Inner lighter gradient overlay for depth
+	# Inner lighter gradient overlay
 	var inner_fin: PackedVector2Array = PackedVector2Array([
 		Vector2(fin_width * 0.15, -1),
 		Vector2(-fin_width * 0.1, -fin_height * 0.25),
@@ -449,4 +388,4 @@ func _draw_fin_shape(fin_color: Color) -> void:
 
 	# Edge outlines
 	draw_polyline(fin, fin_color.darkened(0.3), 1.5)
-	draw_line(fin[4], fin[5], fin_color.lightened(0.25), 1.2)  # Leading edge highlight
+	draw_line(fin[4], fin[5], fin_color.lightened(0.25), 1.2)

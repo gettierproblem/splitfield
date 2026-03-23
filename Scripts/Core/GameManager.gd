@@ -25,6 +25,11 @@ var cluster_magnets: int = 0
 var _game_scene: PackedScene
 var _rng := RandomNumberGenerator.new()
 
+# Sandbox mode: set to a ball/entity type name to spawn only that + a pawn ball
+var sandbox_entity: String = ""
+var return_to_tutorial: bool = false
+var return_to_tutorial_page: int = 0
+
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -210,8 +215,23 @@ func toggle_pause() -> void:
 	get_tree().paused = is_paused
 
 
+func start_sandbox(entity_type: String) -> void:
+	sandbox_entity = entity_type
+	current_level = 10 if entity_type == "Bosco" else 1
+	ScoreManager.reset()
+	_kill_counts.clear()
+	_surviving_balls.clear()
+	barrier_charge = 20.0
+	laser_ammo = 0
+	cluster_magnets = 0
+	is_game_active = true
+	load_game_scene()
+
+
 func return_to_main_menu() -> void:
 	is_paused = false
 	get_tree().paused = false
 	is_game_active = false
+	return_to_tutorial = sandbox_entity != ""
+	sandbox_entity = ""
 	get_tree().change_scene_to_file("res://Scenes/Main.tscn")

@@ -26,6 +26,14 @@ func _ready() -> void:
 	_load_settings()
 	_apply_metallic_styling()
 
+	# Return to tutorial if coming back from sandbox
+	if GameManager.return_to_tutorial:
+		GameManager.return_to_tutorial = false
+		get_node("VBoxContainer").visible = false
+		get_node("TutorialPanel").visible = true
+		_tutorial_page = GameManager.return_to_tutorial_page
+		_show_tutorial_page()
+
 
 func _apply_metallic_styling() -> void:
 	# Title glow — golden text with outline feel
@@ -250,6 +258,38 @@ func _spawn_specimens() -> void:
 		label.add_theme_font_size_override("normal_font_size", 13)
 		container.add_child(label)
 
+		# Clickable overlay to launch sandbox
+		if entry.has("sandbox"):
+			var btn = Button.new()
+			btn.position = Vector2(0, row_y - spacing * 0.5)
+			btn.size = Vector2(680, spacing)
+			btn.flat = true
+			btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+			var sandbox_type: String = entry["sandbox"]
+			btn.pressed.connect(func():
+				GameManager.return_to_tutorial_page = _tutorial_page
+				GameManager.start_sandbox(sandbox_type))
+			# Highlight on hover
+			var hover_style = StyleBoxFlat.new()
+			hover_style.bg_color = Color(1, 1, 1, 0.08)
+			hover_style.corner_radius_top_left = 4
+			hover_style.corner_radius_top_right = 4
+			hover_style.corner_radius_bottom_left = 4
+			hover_style.corner_radius_bottom_right = 4
+			btn.add_theme_stylebox_override("hover", hover_style)
+			container.add_child(btn)
+
+	# Hint text
+	if page.has("specimens"):
+		var hint = Label.new()
+		hint.text = "Click any entry to try it in sandbox mode"
+		hint.position = Vector2(0, start_y + entries.size() * spacing + 2)
+		hint.size = Vector2(700, 20)
+		hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		hint.add_theme_font_size_override("font_size", 11)
+		hint.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 0.7))
+		container.add_child(hint)
+
 	# Extra text block below specimens (for Bosco/Powerups pages)
 	if page.has("extra_text"):
 		var extra = RichTextLabel.new()
@@ -292,12 +332,12 @@ Your barrier speed depends on your charge level. Lightning bolt powerups add 5% 
 			"start_y": 100,
 			"spacing": 60,
 			"specimens": [
-				{"create": func(): return PawnBallGD.new(), "desc": "[b][color=red]Pawn Ball[/color][/b]\nBasic bouncing enemy. The most common ball type."},
-				{"create": func(): return NukeBallGD.new(), "desc": "[b][color=magenta]Nuke Ball[/color][/b]\nBounces with gravity. Detonates when trapped in a small area, destroying all nearby balls. 500 pts per kill."},
-				{"create": func(): return OrangeBallGD.new(), "desc": "[b][color=orange]Orange Ball[/color][/b]\nAbsorbs momentum from other balls on collision. Unpredictable movement."},
-				{"create": func(): return OozeBallGD.new(), "desc": "[b][color=green]Ooze Ball[/color][/b]\nTime bomb! If not trapped quickly, splits into multiple Pawn balls."},
-				{"create": func(): return GlassBallGD.new(), "desc": "[b][color=cyan]Glass Ball[/color][/b]\nShatters after 3 barrier hits. Two damaged glass balls colliding clears the area."},
-				{"create": func(): return EyeballGD.new(), "desc": "[b][color=purple]Sentry Eye[/color][/b]\nActively hunts your cursor! Appears at level 20+."},
+				{"create": func(): return PawnBallGD.new(), "desc": "[b][color=red]Pawn Ball[/color][/b]\nBasic bouncing enemy. The most common ball type.", "sandbox": "PawnBall"},
+				{"create": func(): return NukeBallGD.new(), "desc": "[b][color=magenta]Nuke Ball[/color][/b]\nBounces with gravity. Detonates when trapped in a small area, destroying all nearby balls. 500 pts per kill.", "sandbox": "NukeBall"},
+				{"create": func(): return OrangeBallGD.new(), "desc": "[b][color=orange]Orange Ball[/color][/b]\nAbsorbs momentum from other balls on collision. Unpredictable movement.", "sandbox": "OrangeBall"},
+				{"create": func(): return OozeBallGD.new(), "desc": "[b][color=green]Ooze Ball[/color][/b]\nTime bomb! If not trapped quickly, splits into multiple Pawn balls.", "sandbox": "OozeBall"},
+				{"create": func(): return GlassBallGD.new(), "desc": "[b][color=cyan]Glass Ball[/color][/b]\nShatters after 3 barrier hits. Two damaged glass balls colliding clears the area.", "sandbox": "GlassBall"},
+				{"create": func(): return EyeballGD.new(), "desc": "[b][color=purple]Sentry Eye[/color][/b]\nActively hunts your cursor! Appears at level 20+.", "sandbox": "Eyeball"},
 			]
 		},
 
@@ -307,7 +347,7 @@ Your barrier speed depends on your charge level. Lightning bolt powerups add 5% 
 			"start_y": 100,
 			"spacing": 70,
 			"specimens": [
-				{"create": func(): return _create_bosco_specimen(), "desc": "[b][color=gray]Bosco[/color][/b] — Shark fin that appears at [b]level 10+[/b]. Patrols the edges, periodically dives through the field. Touching his fin or hitting your barrier costs a life. Passes through walls freely."},
+				{"create": func(): return _create_bosco_specimen(), "desc": "[b][color=gray]Bosco[/color][/b] — Shark fin that appears at [b]level 10+[/b]. Patrols the edges, periodically dives through the field. Touching his fin or hitting your barrier costs a life. Passes through walls freely.", "sandbox": "Bosco"},
 			],
 			"extra_text_y": 160,
 			"extra_text": """[b]States:[/b]
@@ -328,12 +368,12 @@ Your barrier speed depends on your charge level. Lightning bolt powerups add 5% 
 			"start_y": 110,
 			"spacing": 45,
 			"specimens": [
-				{"create": func(): return LightningBoltGD.new(), "desc": "[b][color=cyan]Lightning Bolt[/color][/b]\n+5% barrier charge. Most common powerup."},
-				{"create": func(): return ScoreMultiplierGD.new(), "desc": "[b][color=yellow]Score Multiplier[/color][/b]\nCycles 0.5x/2x/3x/4x. Applied to bonus at level end. One per level."},
-				{"create": func(): return ClusterMagnetPickupGD.new(), "desc": "[b][color=red]Cluster Magnet[/color][/b]\n+10 cluster magnet charges."},
-				{"create": func(): return AmmoTinGD.new(), "desc": "[b][color=green]Ammo Tin[/color][/b]\n+10 laser cartridge charges."},
-				{"create": func(): return LifeKeyGD.new(), "desc": "[b][color=goldenrod]Life Key[/color][/b]\n+1-5 extra lives."},
-				{"create": func(): return YummieCakeGD.new(), "desc": "[b][color=pink]Yummie Cake[/color][/b]\nDetonates on barrier hit, spawning 4-7 child powerups."},
+				{"create": func(): return LightningBoltGD.new(), "desc": "[b][color=cyan]Lightning Bolt[/color][/b]\n+5% barrier charge. Most common powerup.", "sandbox": "LightningBolt"},
+				{"create": func(): return ScoreMultiplierGD.new(), "desc": "[b][color=yellow]Score Multiplier[/color][/b]\nCycles 0.5x/2x/3x/4x. Applied to bonus at level end. One per level.", "sandbox": "ScoreMultiplier"},
+				{"create": func(): return ClusterMagnetPickupGD.new(), "desc": "[b][color=red]Cluster Magnet[/color][/b]\n+10 cluster magnet charges.", "sandbox": "ClusterMagnetPickup"},
+				{"create": func(): return AmmoTinGD.new(), "desc": "[b][color=green]Ammo Tin[/color][/b]\n+10 laser cartridge charges.", "sandbox": "AmmoTin"},
+				{"create": func(): return LifeKeyGD.new(), "desc": "[b][color=goldenrod]Life Key[/color][/b]\n+1-5 extra lives.", "sandbox": "LifeKey"},
+				{"create": func(): return YummieCakeGD.new(), "desc": "[b][color=pink]Yummie Cake[/color][/b]\nDetonates on barrier hit, spawning 4-7 child powerups.", "sandbox": "YummieCake"},
 			],
 		},
 

@@ -12,7 +12,7 @@ var _detonated: bool = false
 func _ready() -> void:
 	ball_color = Color(0.2, 0.9, 0.1)  # Vivid green (matches original sprite 900)
 	speed = 180.0
-	radius = 7.0
+	radius = 10.0
 	score_value = 200
 	super._ready()
 

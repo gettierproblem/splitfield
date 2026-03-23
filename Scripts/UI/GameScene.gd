@@ -63,16 +63,24 @@ func _ready() -> void:
 	_cluster_magnets = GameManager.cluster_magnets
 	_barrier_charge = GameManager.barrier_charge
 
-	_spawn_balls_for_level()
+	if GameManager.sandbox_entity != "":
+		_spawn_sandbox_entity()
+	else:
+		_spawn_balls_for_level()
 
 	# Start gameplay music — cycles through tracks and loops
 	var tracks: Array[String] = ["gameplay1", "gameplay2"]
 	AudioManager.play_music_playlist(tracks)
 
-	# Initialize Bosco manager
-	_bosco_manager = BoscoManager.new()
-	add_child(_bosco_manager)
-	_bosco_manager.initialize_for_level(_field)
+	# Initialize Bosco manager (skip in sandbox unless testing Bosco)
+	if GameManager.sandbox_entity == "":
+		_bosco_manager = BoscoManager.new()
+		add_child(_bosco_manager)
+		_bosco_manager.initialize_for_level(_field)
+	elif GameManager.sandbox_entity == "Bosco":
+		_bosco_manager = BoscoManager.new()
+		add_child(_bosco_manager)
+		_bosco_manager.initialize_for_level(_field)
 
 	_hud.update_all()
 	_hud.update_timed_bonus(int(_timed_bonus))
@@ -174,15 +182,19 @@ func _process(delta: float) -> void:
 
 		if _timed_bonus <= 0:
 			_level_complete = true
+			if GameManager.sandbox_entity != "":
+				GameManager.return_to_main_menu()
+				return
 			GameManager.trigger_game_over()
 			return
 
 	# Power-up spawning: every 5 seconds, only if no active non-multiplier powerup on field
-	_power_up_timer -= delta
-	if _power_up_timer <= 0:
-		_power_up_timer = POWER_UP_SPAWN_INTERVAL
-		if not _has_active_non_multiplier_power_up():
-			_try_spawn_power_up()
+	if GameManager.sandbox_entity == "":
+		_power_up_timer -= delta
+		if _power_up_timer <= 0:
+			_power_up_timer = POWER_UP_SPAWN_INTERVAL
+			if not _has_active_non_multiplier_power_up():
+				_try_spawn_power_up()
 
 
 func _input(event: InputEvent) -> void:
@@ -293,6 +305,67 @@ func _spawn_balls_for_level() -> void:
 	GameManager.clear_kill_counts()
 
 
+func _spawn_sandbox_entity() -> void:
+	var balls_container = _field.get_balls_container()
+	var entity_type = GameManager.sandbox_entity
+
+	# Always spawn a pawn ball for reference (unless testing pawn itself)
+	var pawn = PawnBallGD.new()
+	pawn.global_position = _field.get_random_empty_position()
+	balls_container.add_child(pawn)
+
+	# Spawn the target entity
+	if entity_type == "Bosco":
+		# Bosco takes over a ball, so spawn a second pawn to keep the field active
+		var pawn2 = PawnBallGD.new()
+		pawn2.global_position = _field.get_random_empty_position()
+		balls_container.add_child(pawn2)
+	elif entity_type == "GlassBall":
+		for i in 4:
+			var glass = GlassBallGD.new()
+			glass.global_position = _field.get_random_empty_position()
+			balls_container.add_child(glass)
+	elif entity_type == "NukeBall":
+		for i in 3:
+			var nuke = NukeBallGD.new()
+			nuke.global_position = _field.get_random_empty_position()
+			balls_container.add_child(nuke)
+	else:
+		var ball = _create_ball_by_type_name(entity_type)
+		if ball != null and entity_type != "PawnBall":
+			ball.global_position = _field.get_random_empty_position()
+			balls_container.add_child(ball)
+
+	# Spawn powerups by name
+	match entity_type:
+		"LightningBolt":
+			var pu = LightningBoltGD.new()
+			pu.global_position = _field.get_random_empty_position()
+			_field.get_power_ups_container().add_child(pu)
+		"ScoreMultiplier":
+			var pu = ScoreMultiplierGD.new()
+			pu.global_position = _field.get_random_empty_position()
+			_field.get_power_ups_container().add_child(pu)
+		"ClusterMagnetPickup":
+			var pu = ClusterMagnetPickupGD.new()
+			pu.global_position = _field.get_random_empty_position()
+			_field.get_power_ups_container().add_child(pu)
+		"AmmoTin":
+			var pu = AmmoTinGD.new()
+			pu.global_position = _field.get_random_empty_position()
+			_field.get_power_ups_container().add_child(pu)
+		"LifeKey":
+			var pu = LifeKeyGD.new()
+			pu.global_position = _field.get_random_empty_position()
+			_field.get_power_ups_container().add_child(pu)
+		"YummieCake":
+			var pu = YummieCakeGD.new()
+			pu.global_position = _field.get_random_empty_position()
+			_field.get_power_ups_container().add_child(pu)
+
+	GameManager.clear_kill_counts()
+
+
 func _create_ball_by_type_name(type_name: String) -> BallBaseGD:
 	match type_name:
 		"PawnBall":
@@ -330,6 +403,12 @@ func _on_fill_percent_changed(percent: float) -> void:
 	var level_data = GameManager.get_current_level_data()
 	if percent >= level_data.required_fill_percent:
 		_level_complete = true
+
+		if GameManager.sandbox_entity != "":
+			AudioManager.stop_music()
+			GameManager.return_to_main_menu()
+			return
+
 		var timed_bonus_awarded: int = int(_timed_bonus)
 		ScoreManager.add_fill_score(percent)
 
