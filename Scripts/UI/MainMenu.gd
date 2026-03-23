@@ -6,6 +6,7 @@ var _tutorial_page: int = 0
 var _tutorial_pages: Array = []
 
 func _ready() -> void:
+	AudioManager.stop_music()
 	get_node("VBoxContainer/NewGameButton").pressed.connect(_on_new_game)
 	get_node("VBoxContainer/HighScoresButton").pressed.connect(_on_high_scores)
 	get_node("VBoxContainer/HowToPlayButton").pressed.connect(_on_how_to_play)
@@ -15,6 +16,71 @@ func _ready() -> void:
 	get_node("TutorialPanel/PrevButton").pressed.connect(_on_tutorial_prev)
 	get_node("TutorialPanel/NextButton").pressed.connect(_on_tutorial_next)
 	_build_tutorial_pages()
+	_apply_metallic_styling()
+
+
+func _apply_metallic_styling() -> void:
+	# Title glow — golden text with outline feel
+	var title = get_node("TitleLabel")
+	title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
+	title.add_theme_color_override("font_outline_color", Color(0.6, 0.4, 0.0))
+	title.add_theme_constant_override("outline_size", 3)
+
+	# Metallic button style
+	var button_style = StyleBoxFlat.new()
+	button_style.bg_color = Color(0.15, 0.15, 0.18)
+	button_style.border_width_left = 1
+	button_style.border_width_top = 1
+	button_style.border_width_right = 1
+	button_style.border_width_bottom = 1
+	button_style.border_color = Color(0.35, 0.35, 0.40)
+	button_style.corner_radius_top_left = 4
+	button_style.corner_radius_top_right = 4
+	button_style.corner_radius_bottom_left = 4
+	button_style.corner_radius_bottom_right = 4
+
+	var button_hover = button_style.duplicate()
+	button_hover.bg_color = Color(0.20, 0.22, 0.25)
+	button_hover.border_color = Color(0.45, 0.45, 0.50)
+
+	var button_pressed = button_style.duplicate()
+	button_pressed.bg_color = Color(0.10, 0.10, 0.12)
+
+	for btn_name in ["NewGameButton", "HighScoresButton", "HowToPlayButton", "QuitButton"]:
+		var btn = get_node("VBoxContainer/" + btn_name)
+		btn.add_theme_stylebox_override("normal", button_style)
+		btn.add_theme_stylebox_override("hover", button_hover)
+		btn.add_theme_stylebox_override("pressed", button_pressed)
+		btn.add_theme_color_override("font_color", Color(0.2, 0.9, 0.3))
+		btn.add_theme_color_override("font_hover_color", Color(0.3, 1.0, 0.4))
+		btn.add_theme_font_size_override("font_size", 18)
+
+	# High scores panel — dark metallic
+	var panel_style = StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.08, 0.08, 0.10)
+	panel_style.border_width_left = 2
+	panel_style.border_width_top = 2
+	panel_style.border_width_right = 2
+	panel_style.border_width_bottom = 2
+	panel_style.border_color = Color(0.30, 0.30, 0.35)
+	panel_style.corner_radius_top_left = 6
+	panel_style.corner_radius_top_right = 6
+	panel_style.corner_radius_bottom_left = 6
+	panel_style.corner_radius_bottom_right = 6
+	get_node("HighScoresPanel").add_theme_stylebox_override("panel", panel_style)
+
+	# High scores list — green digits
+	get_node("HighScoresPanel/HighScoresList").add_theme_color_override("font_color", Color(0.2, 0.9, 0.3))
+
+	# Style back/nav buttons in panels
+	for btn_path in ["HighScoresPanel/BackButton", "TutorialPanel/BackButton",
+			"TutorialPanel/PrevButton", "TutorialPanel/NextButton"]:
+		var btn = get_node(btn_path)
+		btn.add_theme_stylebox_override("normal", button_style)
+		btn.add_theme_stylebox_override("hover", button_hover)
+		btn.add_theme_stylebox_override("pressed", button_pressed)
+		btn.add_theme_color_override("font_color", Color(0.2, 0.9, 0.3))
+		btn.add_theme_color_override("font_hover_color", Color(0.3, 1.0, 0.4))
 
 
 func _on_new_game() -> void:

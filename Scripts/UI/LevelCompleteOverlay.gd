@@ -46,6 +46,20 @@ func show_level_complete(fill_percent: float, timed_bonus: int = 0) -> void:
 	_panel.visible = true
 	get_tree().paused = true
 
+	# Apply metallic panel styling
+	var panel_style = StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.08, 0.08, 0.10)
+	panel_style.border_width_left = 2
+	panel_style.border_width_top = 2
+	panel_style.border_width_right = 2
+	panel_style.border_width_bottom = 2
+	panel_style.border_color = Color(0.35, 0.35, 0.40)
+	panel_style.corner_radius_top_left = 8
+	panel_style.corner_radius_top_right = 8
+	panel_style.corner_radius_bottom_left = 8
+	panel_style.corner_radius_bottom_right = 8
+	_panel.add_theme_stylebox_override("panel", panel_style)
+
 	var overfill_bonus: int = ScoreManager.calc_overachiever_bonus(fill_percent)
 	var isolation_count: int = _count_isolated_regions()
 	var isolation_score: int = isolation_count * 100
@@ -53,38 +67,119 @@ func show_level_complete(fill_percent: float, timed_bonus: int = 0) -> void:
 	var multiplier: float = ScoreManager.multiplier
 	var total_bonus: int = int(subtotal * multiplier)
 
+	# Color the title green
 	_title_label.text = "LEVEL %s COMPLETE" % str(GameManager.current_level)
+	_title_label.add_theme_color_override("font_color", Color(0.2, 1.0, 0.3))
+
+	# Build reveal sequence: [label_node, value_node, target_value, color]
+	var reveal_items: Array = []
+
 	_bonus_achieved_label.text = "BONUS ACHIEVED"
-	_bonus_achieved_value.text = _format_number(timed_bonus)
+	_bonus_achieved_value.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3))
+	_bonus_achieved_label.modulate.a = 0
+	_bonus_achieved_value.modulate.a = 0
+	_bonus_achieved_value.text = "0"
+	reveal_items.append([_bonus_achieved_label, _bonus_achieved_value, timed_bonus])
+
 	_isolation_label.text = "ISOLATION  x%s" % str(isolation_count)
-	_isolation_value.text = _format_number(isolation_score)
+	_isolation_value.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3))
+	_isolation_label.modulate.a = 0
+	_isolation_value.modulate.a = 0
+	_isolation_value.text = "0"
+	reveal_items.append([_isolation_label, _isolation_value, isolation_score])
 
 	if overfill_bonus > 0:
 		_overachiever_label.visible = true
 		_overachiever_value.visible = true
 		_overachiever_label.text = "OVERACHIEVER  %.1f%%" % fill_percent
-		_overachiever_value.text = _format_number(overfill_bonus)
+		_overachiever_value.add_theme_color_override("font_color", Color(0.9, 0.6, 1.0))
+		_overachiever_label.modulate.a = 0
+		_overachiever_value.modulate.a = 0
+		_overachiever_value.text = "0"
+		reveal_items.append([_overachiever_label, _overachiever_value, overfill_bonus])
 	else:
 		_overachiever_label.visible = false
 		_overachiever_value.visible = false
 
-	# Show multiplier row only when not 1x
 	if multiplier != 1.0:
 		_multiplier_label.visible = true
 		_multiplier_value.visible = true
 		_multiplier_label.text = "MULTIPLIER"
 		_multiplier_value.text = "x%s" % str(multiplier)
+		_multiplier_value.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
+		_multiplier_label.modulate.a = 0
+		_multiplier_value.modulate.a = 0
+		# Multiplier doesn't count up — just reveals
+		reveal_items.append([_multiplier_label, _multiplier_value, -1])
 	else:
 		_multiplier_label.visible = false
 		_multiplier_value.visible = false
 
-	# Apply multiplied bonus to score, then reset multiplier for next level
 	ScoreManager.apply_multiplier_and_add(subtotal)
 	ScoreManager.multiplier = 1.0
 
 	_total_bonus_label.text = "TOTAL BONUS"
-	_total_bonus_value.text = _format_number(total_bonus)
+	_total_bonus_value.add_theme_color_override("font_color", Color(1.0, 1.0, 0.3))
+	_total_bonus_label.modulate.a = 0
+	_total_bonus_value.modulate.a = 0
+	_total_bonus_value.text = "0"
+	reveal_items.append([_total_bonus_label, _total_bonus_value, total_bonus])
+
 	_total_score_label.text = "TOTAL SCORE  %s" % _format_number(ScoreManager.score)
+	_total_score_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
+	_total_score_label.modulate.a = 0
+
+	_next_level_button.modulate.a = 0
+	# Style the next level button
+	var btn_style = StyleBoxFlat.new()
+	btn_style.bg_color = Color(0.15, 0.15, 0.18)
+	btn_style.border_width_left = 1
+	btn_style.border_width_top = 1
+	btn_style.border_width_right = 1
+	btn_style.border_width_bottom = 1
+	btn_style.border_color = Color(0.35, 0.35, 0.40)
+	btn_style.corner_radius_top_left = 4
+	btn_style.corner_radius_top_right = 4
+	btn_style.corner_radius_bottom_left = 4
+	btn_style.corner_radius_bottom_right = 4
+	_next_level_button.add_theme_stylebox_override("normal", btn_style)
+	_next_level_button.add_theme_color_override("font_color", Color(0.2, 0.9, 0.3))
+
+	# Animated tally reveal — each row fades in, then its value counts up from 0
+	var tween = create_tween()
+	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+
+	# Play level_tally once at the start
+	tween.tween_callback(func(): AudioManager.play_sfx("level_tally"))
+	tween.tween_interval(0.3)
+
+	for item in reveal_items:
+		var lbl: Label = item[0]
+		var val_lbl: Label = item[1]
+		var target: int = item[2]
+
+		# Fade in the row
+		tween.tween_property(lbl, "modulate:a", 1.0, 0.15)
+		tween.parallel().tween_property(val_lbl, "modulate:a", 1.0, 0.15)
+
+		if target > 0:
+			# Play show_bonus as the number starts counting up
+			var count_duration: float = clampf(float(target) / 5000.0, 0.3, 1.2)
+			tween.tween_callback(func(): AudioManager.play_sfx("show_bonus"))
+			tween.tween_method(
+				func(v: float): val_lbl.text = _format_number(int(v)),
+				0.0, float(target), count_duration)
+		elif target == 0:
+			tween.tween_callback(func(): val_lbl.text = "0")
+
+		# Brief pause before next row
+		tween.tween_interval(0.25)
+
+	# Final total score reveal
+	tween.tween_callback(func(): AudioManager.play_sfx("show_bonus"))
+	tween.tween_property(_total_score_label, "modulate:a", 1.0, 0.2)
+	tween.tween_interval(0.3)
+	tween.tween_property(_next_level_button, "modulate:a", 1.0, 0.3)
 
 
 func _count_isolated_regions() -> int:

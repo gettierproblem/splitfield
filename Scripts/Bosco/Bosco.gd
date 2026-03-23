@@ -329,17 +329,28 @@ func _update_ash_trail(dt: float) -> void:
 
 
 func _draw() -> void:
-	# Draw ash trail
+	# Draw smoke trail — varies in size, drifts upward, transitions gray→transparent
 	for ash in _ash_trail:
-		var alpha: float = 1.0 - ash["age"] / ASH_LIFETIME
+		var age_ratio: float = ash["age"] / ASH_LIFETIME
+		var alpha: float = (1.0 - age_ratio) * 0.4
 		var local_ash: Vector2 = ash["pos"] - global_position
-		draw_circle(local_ash, 1.5, Color(0.5, 0.5, 0.5, alpha * 0.4))
+		# Drift upward and grow as they age
+		local_ash.y -= age_ratio * 4.0
+		var smoke_size: float = 1.0 + age_ratio * 2.0
+		if age_ratio > 0.5:
+			smoke_size *= (1.0 - (age_ratio - 0.5) * 1.5)  # Shrink at end
+		draw_circle(local_ash, maxf(0.5, smoke_size), Color(0.6, 0.6, 0.65, alpha))
 
 	if _state == BoscoState.KILLED:
-		for i in range(4):
-			var angle: float = _rotation_angle + i * TAU / 4.0
-			var line_end: Vector2 = Vector2(cos(angle) * 12.0, sin(angle) * 12.0)
-			draw_line(Vector2.ZERO, line_end, Color.YELLOW, 1.5)
+		# Spiral particle trail — yellow→red fade
+		var death_progress: float = 1.0 - _state_timer / DEATH_SPIN_DURATION
+		for i in range(6):
+			var angle: float = _rotation_angle + i * TAU / 6.0
+			var dist: float = 8.0 + death_progress * 8.0
+			var particle_pos: Vector2 = Vector2(cos(angle) * dist, sin(angle) * dist)
+			var particle_color: Color = Color(1.0, 1.0 - death_progress * 0.8, 0.0, 1.0 - death_progress * 0.5)
+			draw_circle(particle_pos, 2.0 - death_progress * 1.0, particle_color)
+			draw_line(Vector2.ZERO, particle_pos * 0.8, particle_color, 1.5)
 		var fade: float = _state_timer / DEATH_SPIN_DURATION
 		_draw_fin_shape(Color(0.35, 0.35, 0.45, fade))
 		return
@@ -347,7 +358,7 @@ func _draw() -> void:
 	var base_color: Color
 	match _state:
 		BoscoState.RAMPAGE:
-			base_color = Color(0.8, 0.2, 0.2)
+			base_color = Color(0.85, 0.15, 0.1)
 		BoscoState.TIRED:
 			base_color = Color(0.3, 0.3, 0.4)
 		BoscoState.GOTCHA:
@@ -357,36 +368,85 @@ func _draw() -> void:
 
 	_draw_fin_shape(base_color)
 
-	# Water ripple at base
+	# Wake lines behind fin (patrolling/diving)
+	if _state == BoscoState.PATROLLING or _state == BoscoState.DIVING:
+		var move_dir: Vector2 = _direction if _direction.length() > 0.1 else Vector2(1, 0)
+		var behind: Vector2 = -move_dir.normalized()
+		var t: float = Time.get_ticks_msec() / 300.0
+		var wake_color: Color = Color(0.5, 0.7, 0.9, 0.25)
+		for i in range(3):
+			var offset: float = 6.0 + i * 4.0
+			var wave: float = sin(t + i * 1.2) * 2.0
+			var perp: Vector2 = Vector2(-behind.y, behind.x) * wave
+			draw_line(behind * offset + perp - Vector2(2, 0), behind * offset + perp + Vector2(2, 0), wake_color, 0.8)
+
+	# Water ripple at base — enhanced
 	var t: float = Time.get_ticks_msec() / 400.0
-	var ripple1: float = sin(t) * 3.0
-	var ripple2: float = sin(t + 1.5) * 2.0
+	var ripple1: float = sin(t) * 3.5
+	var ripple2: float = sin(t + 1.5) * 2.5
+	var ripple3: float = sin(t + 3.0) * 1.5
 	var ripple_color: Color = Color(0.5, 0.7, 0.9, 0.3)
-	draw_line(Vector2(-8 + ripple1, 1), Vector2(8 + ripple1, 1), ripple_color, 1.0)
-	draw_line(Vector2(-6 + ripple2, 3), Vector2(6 + ripple2, 3), ripple_color, 0.8)
+	draw_line(Vector2(-9 + ripple1, 1), Vector2(9 + ripple1, 1), ripple_color, 1.2)
+	draw_line(Vector2(-7 + ripple2, 3), Vector2(7 + ripple2, 3), ripple_color, 0.8)
+	draw_line(Vector2(-4 + ripple3, 5), Vector2(4 + ripple3, 5), Color(0.5, 0.7, 0.9, 0.15), 0.6)
 
 	if _state == BoscoState.RAMPAGE:
-		var pulse: float = sin(Time.get_ticks_msec() / 100.0)
-		draw_circle(Vector2.ZERO, 14.0 + pulse * 2.0, Color(1.0, 0.0, 0.0, 0.15))
+		var pulse: float = sin(Time.get_ticks_msec() / 80.0)
+		draw_circle(Vector2.ZERO, 16.0 + pulse * 3.0, Color(1.0, 0.0, 0.0, 0.2))
+		draw_circle(Vector2.ZERO, 10.0 + pulse * 2.0, Color(1.0, 0.2, 0.0, 0.15))
 
 
 func _draw_fin_shape(fin_color: Color) -> void:
-	var fin_height: float = 14.0
-	var fin_width: float = 10.0
+	var fin_height: float = 16.0
+	var fin_width: float = 14.0
 
+	# Tired state — drooping fin
+	if _state == BoscoState.TIRED:
+		fin_height *= 0.75
+
+	# Diving state — slightly larger
+	if _state == BoscoState.DIVING:
+		fin_height *= 1.15
+		fin_width *= 1.15
+
+	# Shadow
+	var shadow_offset: Vector2 = Vector2(2.0, 2.0)
 	var shadow_fin: PackedVector2Array = PackedVector2Array([
-		Vector2(1.5, 1.5),
-		Vector2(-fin_width * 0.5 + 1.5, 1.5),
-		Vector2(fin_width * 0.2 + 1.5, -fin_height + 1.5)
+		shadow_offset + Vector2(fin_width * 0.3, 0),
+		shadow_offset + Vector2(-fin_width * 0.3, 2),
+		shadow_offset + Vector2(-fin_width * 0.45, 0),
+		shadow_offset + Vector2(-fin_width * 0.15, -fin_height * 0.3),
+		shadow_offset + Vector2(fin_width * 0.15, -fin_height),
+		shadow_offset + Vector2(fin_width * 0.3, -fin_height * 0.6),
 	])
-	draw_polygon(shadow_fin, PackedColorArray([Color(0, 0, 0, 0.4)]))
+	draw_polygon(shadow_fin, PackedColorArray([Color(0, 0, 0, 0.35)]))
 
+	# Organic 6-point fin shape — curved leading edge, concave trailing edge
 	var fin: PackedVector2Array = PackedVector2Array([
-		Vector2(0, 0),
-		Vector2(-fin_width * 0.5, 0),
-		Vector2(fin_width * 0.2, -fin_height)
+		Vector2(fin_width * 0.3, 0),           # Base right
+		Vector2(-fin_width * 0.3, 2),           # Base left (trailing)
+		Vector2(-fin_width * 0.45, 0),          # Trailing edge low
+		Vector2(-fin_width * 0.15, -fin_height * 0.3),  # Trailing edge mid (concave)
+		Vector2(fin_width * 0.15, -fin_height),  # Tip
+		Vector2(fin_width * 0.3, -fin_height * 0.6),  # Leading edge
 	])
 	draw_polygon(fin, PackedColorArray([fin_color]))
-	draw_line(fin[2], fin[0], fin_color.lightened(0.3), 1.5)
-	draw_line(fin[2], fin[1], fin_color.darkened(0.2), 1.0)
-	draw_line(fin[0], fin[1], fin_color.darkened(0.1), 1.5)
+
+	# Inner lighter gradient overlay for depth
+	var inner_fin: PackedVector2Array = PackedVector2Array([
+		Vector2(fin_width * 0.15, -1),
+		Vector2(-fin_width * 0.1, -fin_height * 0.25),
+		Vector2(fin_width * 0.1, -fin_height * 0.85),
+		Vector2(fin_width * 0.2, -fin_height * 0.5),
+	])
+	draw_polygon(inner_fin, PackedColorArray([fin_color.lightened(0.15)]))
+
+	# Cartilage/ridge lines
+	draw_line(Vector2(fin_width * 0.15, -fin_height), Vector2(fin_width * 0.05, -2),
+		fin_color.darkened(0.2), 1.0)
+	draw_line(Vector2(fin_width * 0.15, -fin_height), Vector2(-fin_width * 0.2, -1),
+		fin_color.darkened(0.15), 0.8)
+
+	# Edge outlines
+	draw_polyline(fin, fin_color.darkened(0.3), 1.5)
+	draw_line(fin[4], fin[5], fin_color.lightened(0.25), 1.2)  # Leading edge highlight

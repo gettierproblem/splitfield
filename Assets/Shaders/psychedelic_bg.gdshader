@@ -3,6 +3,8 @@ shader_type canvas_item;
 uniform float time_scale : hint_range(0.1, 5.0) = 0.5;
 uniform float color_intensity : hint_range(0.1, 2.0) = 0.8;
 uniform float plasma_scale : hint_range(1.0, 20.0) = 8.0;
+uniform vec4 color_a : source_color = vec4(0.25, 0.04, 0.02, 1.0);
+uniform vec4 color_b : source_color = vec4(0.08, 0.02, 0.02, 1.0);
 
 void fragment() {
     float t = TIME * time_scale;
@@ -17,13 +19,16 @@ void fragment() {
 
     float v = (v1 + v2 + v3 + v4 + v5) * 0.2;
 
-    // Smooth color cycling — no quantization
-    float r = sin(v * 3.14159 + t * 0.2) * 0.5 + 0.5;
-    float g = sin(v * 3.14159 + t * 0.35 + 2.094) * 0.5 + 0.5;
-    float b = sin(v * 3.14159 + t * 0.5 + 4.188) * 0.5 + 0.5;
+    // Blend between the two level colors instead of full rainbow
+    float blend = v * 0.5 + 0.5;
+    vec3 base = mix(color_a.rgb, color_b.rgb, blend);
+
+    // Add subtle color variation for visual interest
+    float accent = sin(v * 3.14159 + t * 0.3) * 0.15;
+    base += vec3(accent * 0.5, accent * 0.3, accent * 0.8);
 
     // Smooth blend with slight darkening for depth
     float brightness = 0.7 + 0.3 * sin(v * 2.0 + t * 0.3);
 
-    COLOR = vec4(r * color_intensity * brightness, g * color_intensity * brightness, b * color_intensity * brightness, 1.0);
+    COLOR = vec4(base * color_intensity * brightness, 1.0);
 }

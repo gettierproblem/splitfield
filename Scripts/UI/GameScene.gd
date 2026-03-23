@@ -64,6 +64,10 @@ func _ready() -> void:
 
 	_spawn_balls_for_level()
 
+	# Start gameplay music — cycles through tracks and loops
+	var tracks: Array[String] = ["gameplay1", "gameplay2"]
+	AudioManager.play_music_playlist(tracks)
+
 	# Initialize Bosco manager
 	_bosco_manager = BoscoManager.new()
 	add_child(_bosco_manager)
@@ -193,6 +197,7 @@ func _input(event: InputEvent) -> void:
 				# Fire barrier beam
 				var charge_ratio: float = _barrier_charge / MAX_BARRIER_CHARGE
 				var beam_speed: float = 0.5 + charge_ratio * 1.5
+				var was_laser: bool = _laser_charged
 
 				if _laser_charged:
 					beam_speed = 4.0
@@ -201,6 +206,7 @@ func _input(event: InputEvent) -> void:
 						_cursor_ship.set_charged_shot(false)
 					_hud.update_laser_charge(false)
 
+				AudioManager.play_sfx("laser_fire" if was_laser else "barrier_fire")
 				_field.start_beam(mouse_pos, vertical, beam_speed)
 
 
@@ -305,6 +311,9 @@ func _on_fill_percent_changed(percent: float) -> void:
 	_last_fill_delta = percent - _last_fill_percent
 	_last_fill_percent = percent
 
+	# Collect any powerups now enclosed by filled area
+	_collect_enclosed_powerups()
+
 	var level_data = GameManager.get_current_level_data()
 	if percent >= level_data.required_fill_percent:
 		_level_complete = true
@@ -317,12 +326,15 @@ func _on_fill_percent_changed(percent: float) -> void:
 		GameManager.laser_ammo = _laser_ammo
 		GameManager.cluster_magnets = _cluster_magnets
 
+		AudioManager.stop_music()
+		AudioManager.play_sfx("level_ended")
 		GameManager.on_level_completed()
 		_level_complete_overlay.show_level_complete(percent, timed_bonus_awarded)
 
 
 func _on_barrier_completed() -> void:
-	AudioManager.play_sfx("barrier_complete")
+	if not _level_complete:
+		AudioManager.play_sfx("barrier_complete")
 
 	var contained_score: int = int(roundf(_last_fill_delta)) * 10
 	if contained_score > 0:
@@ -414,6 +426,14 @@ func _resolve_yummy_type(lvl: int) -> PowerUpBase:
 			return entry["create"].call()
 
 	return LightningBoltGD.new()
+
+
+func _collect_enclosed_powerups() -> void:
+	for child in _field.get_power_ups_container().get_children():
+		if child is PowerUpBase and is_instance_valid(child):
+			var cell = _field.get_cell_at_world(child.global_position)
+			if cell == PlayingField.CellState.FILLED:
+				child.collect()
 
 
 func _save_surviving_balls() -> void:

@@ -8,17 +8,17 @@ var magnet_target: Vector2 = Vector2.ZERO
 
 
 func _ready() -> void:
-	ball_color = Color(0.9, 0.9, 0.2)
+	ball_color = Color(0.75, 0.75, 0.78)  # Silver-gray metallic (matches original sprite 300)
 	speed = 200.0
 	score_value = 100
 	super._ready()
 
 
 func _draw() -> void:
-	# Pawn chess piece shape (simplified circle with flat top)
-	draw_circle(Vector2.ZERO, radius, ball_color)
-	draw_circle(Vector2(0, -radius * 0.4), radius * 0.5, ball_color.lightened(0.2))
-	draw_arc(Vector2.ZERO, radius, 0, TAU, 32, ball_color.darkened(0.2), 1.5)
+	super._draw()
+	# Metallic sheen — bright arc on upper-left for polished metal look
+	draw_arc(Vector2(-radius * 0.05, -radius * 0.05), radius * 0.65, PI * 0.9, PI * 1.5, 10,
+		Color(0.9, 0.92, 0.95, 0.3), 2.0)
 
 
 func move(delta: float) -> void:

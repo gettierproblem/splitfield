@@ -16,13 +16,31 @@ func _ready() -> void:
 
 
 func _draw() -> void:
-	super()
-	# Key icon
-	draw_circle(Vector2(0, -2), 2.5, Color.GOLD)
-	draw_circle(Vector2(0, -2), 1.5, power_up_color)
-	draw_line(Vector2(0, 0), Vector2(0, 4), Color.GOLD, 1.5)
-	draw_line(Vector2(0, 3), Vector2(2, 3), Color.GOLD, 1.5)
-	draw_line(Vector2(0, 4), Vector2(2, 4), Color.GOLD, 1.5)
+	var bob = sin(float(Time.get_ticks_msec()) / 500.0) * 2.0
+	var offset = Vector2(0, bob)
+
+	# Shadow
+	draw_circle(Vector2(1, 3), 6.0, Color(0, 0, 0, 0.15))
+
+	var gold = Color(0.9, 0.75, 0.15)
+	var gold_dark = Color(0.7, 0.55, 0.1)
+	var gold_light = Color(1.0, 0.9, 0.4)
+
+	# Round bow (head) — outer ring
+	draw_circle(offset + Vector2(0, -3), 3.5, gold)
+	draw_circle(offset + Vector2(0, -3), 2.0, gold_dark)  # Inner hole
+	# Sheen on bow
+	draw_arc(offset + Vector2(0, -3), 3.0, PI * 0.7, PI * 1.3, 8, gold_light, 1.0)
+
+	# Thick shaft
+	draw_rect(Rect2(offset + Vector2(-1, 0), Vector2(2, 8)), gold)
+	# Left highlight on shaft
+	draw_line(offset + Vector2(-1, 0), offset + Vector2(-1, 8), gold_light, 0.8)
+
+	# Teeth at bottom
+	draw_rect(Rect2(offset + Vector2(1, 5), Vector2(2.5, 1.5)), gold)
+	draw_rect(Rect2(offset + Vector2(1, 7), Vector2(2, 1.2)), gold)
+	queue_redraw()
 
 
 func apply_effect() -> void:

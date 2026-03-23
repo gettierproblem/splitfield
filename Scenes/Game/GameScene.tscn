@@ -195,12 +195,12 @@ offset_bottom = 704.0
 [node name="ControlsLabel" type="Label" parent="HUD/HUDPanel"]
 layout_mode = 1
 offset_left = 8.0
-offset_top = 710.0
+offset_top = 465.0
 offset_right = 200.0
-offset_bottom = 760.0
+offset_bottom = 535.0
 theme_override_font_sizes/font_size = 10
 theme_override_colors/font_color = Color(0.5, 0.5, 0.6, 1)
-text = "Tab: Toggle Direction
+text = "Right Click or Tab: Toggle Direction
 W: Laser Cartridge
 D: Cluster Magnet
 Click: Fire | ESC: Pause"

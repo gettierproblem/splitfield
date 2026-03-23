@@ -15,14 +15,34 @@ func _ready() -> void:
 
 
 func _draw() -> void:
-	# Cake shape
-	draw_rect(Rect2(-7, -4, 14, 8), Color(0.8, 0.5, 0.3))
-	# Frosting top
-	draw_rect(Rect2(-7, -6, 14, 3), Color(1.0, 0.9, 0.9))
-	# Cherry
-	draw_circle(Vector2(0, -7), 2.0, Color.RED)
-	# Outline
-	draw_rect(Rect2(-7, -6, 14, 10), power_up_color.lightened(0.3), false, 1.0)
+	# Round pink cake (matches original "LOVE MOM" sprite 1102)
+	var cake_pink = Color(1.0, 0.75, 0.8)
+	var frosting = Color(1.0, 0.95, 0.95)
+
+	# Shadow
+	draw_circle(Vector2(1, 2), 9.0, Color(0, 0, 0, 0.2))
+
+	# Main cake body — round
+	draw_circle(Vector2.ZERO, 9.0, cake_pink)
+
+	# Scalloped frosting edge — small overlapping white circles around perimeter
+	for i in range(10):
+		var angle = i * TAU / 10.0
+		var scallop_pos = Vector2(cos(angle), sin(angle)) * 7.5
+		draw_circle(scallop_pos, 2.5, frosting)
+
+	# Inner decorative area
+	draw_circle(Vector2.ZERO, 5.5, cake_pink.lightened(0.1))
+
+	# Red text suggestion (tiny lines to suggest "LOVE MOM")
+	var red = Color(0.9, 0.1, 0.1)
+	draw_line(Vector2(-3, -2), Vector2(-1, -2), red, 0.8)
+	draw_line(Vector2(0, -2), Vector2(2, -2), red, 0.8)
+	draw_line(Vector2(-2, 1), Vector2(2, 1), red, 0.8)
+
+	# Cherry on top
+	draw_circle(Vector2(0, -8), 2.0, Color.RED)
+	draw_circle(Vector2(-0.5, -8.5), 0.8, Color(1.0, 0.5, 0.5, 0.6))  # Cherry highlight
 
 
 func _process(delta: float) -> void:

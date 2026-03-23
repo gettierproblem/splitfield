@@ -34,28 +34,40 @@ func create_visual() -> void:
 
 
 func _draw() -> void:
-	# Dark shadow behind
-	draw_circle(Vector2(1.5, 1.5), radius + 1.0, Color(0, 0, 0, 0.5))
+	# Outer shadow (slightly offset, elliptical feel)
+	draw_circle(Vector2(2.0, 2.0), radius + 1.5, Color(0, 0, 0, 0.45))
+
+	# Rim shadow — dark ring just outside the ball for depth
+	draw_arc(Vector2(0.5, 0.5), radius + 0.5, 0, TAU, 36, Color(0, 0, 0, 0.35), 2.0)
 
 	# Base fill
 	draw_circle(Vector2.ZERO, radius, ball_color)
 
-	# Gradient rings - darker at edges, lighter toward center
-	for i in range(4):
-		var t = (i + 1) / 5.0
+	# 6-ring gradient for richer 3D shading
+	for i in range(6):
+		var t = (i + 1) / 7.0
 		var r = radius * (1.0 - t)
-		var c = ball_color.lerp(ball_color.lightened(0.5), t)
-		c.a = 0.4
-		draw_circle(Vector2(-radius * 0.1, -radius * 0.1) * t, r, c)
+		var c = ball_color.lerp(ball_color.lightened(0.55), t * t)  # Non-linear
+		c.a = 0.35
+		draw_circle(Vector2(-radius * 0.12, -radius * 0.12) * t, r, c)
 
-	# Specular highlight
-	var highlight_pos = Vector2(-radius * 0.3, -radius * 0.35)
-	draw_circle(highlight_pos, radius * 0.3, Color(1, 1, 1, 0.6))
-	draw_circle(highlight_pos + Vector2(0.5, 0.5), radius * 0.15, Color(1, 1, 1, 0.8))
+	# Edge darkening — subtle crescent on the lower-right
+	draw_arc(Vector2(radius * 0.15, radius * 0.15), radius * 0.85, 0.3, PI + 0.3, 20,
+		ball_color.darkened(0.35), radius * 0.4)
 
-	# Thick outline for visibility
-	draw_arc(Vector2.ZERO, radius, 0, TAU, 32, ball_color.darkened(0.4), 2.5)
-	draw_arc(Vector2.ZERO, radius + 1.0, 0, TAU, 32, Color(0, 0, 0, 0.6), 1.5)
+	# Soft specular glow
+	var highlight_pos = Vector2(-radius * 0.28, -radius * 0.32)
+	draw_circle(highlight_pos, radius * 0.35, Color(1, 1, 1, 0.35))
+	# Sharp specular dot
+	draw_circle(highlight_pos + Vector2(0.3, 0.3), radius * 0.14, Color(1, 1, 1, 0.85))
+
+	# Metallic sheen arc on upper-left
+	draw_arc(Vector2(-radius * 0.1, -radius * 0.1), radius * 0.7, PI * 0.8, PI * 1.4, 12,
+		Color(1, 1, 1, 0.2), 1.5)
+
+	# Outline
+	draw_arc(Vector2.ZERO, radius, 0, TAU, 36, ball_color.darkened(0.45), 2.0)
+	draw_arc(Vector2.ZERO, radius + 0.8, 0, TAU, 36, Color(0, 0, 0, 0.5), 1.2)
 
 
 func _physics_process(delta: float) -> void:

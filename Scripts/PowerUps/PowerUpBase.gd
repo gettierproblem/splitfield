@@ -30,16 +30,26 @@ func _ready() -> void:
 
 
 func _draw() -> void:
-	# Diamond shape
-	var points = PackedVector2Array([
-		Vector2(0, -8),
-		Vector2(8, 0),
-		Vector2(0, 8),
-		Vector2(-8, 0)
-	])
-	draw_polygon(points, PackedColorArray([power_up_color]))
-	var outline = PackedVector2Array([points[0], points[1], points[2], points[3], points[0]])
-	draw_polyline(outline, power_up_color.lightened(0.4), 1.5)
+	# Floating bob animation
+	var bob = sin(float(Time.get_ticks_msec()) / 500.0) * 2.0
+	var offset = Vector2(0, bob)
+
+	# Shadow beneath
+	draw_circle(Vector2(0, 3), 7.0, Color(0, 0, 0, 0.2))
+
+	# Rounded container circle
+	draw_circle(offset, 9.0, power_up_color.darkened(0.5))
+	draw_circle(offset, 8.0, power_up_color.darkened(0.2))
+
+	# Bright outline
+	draw_arc(offset, 9.0, 0, TAU, 24, power_up_color.lightened(0.3), 1.5)
+
+	# Orbiting sparkle
+	var sparkle_t = float(Time.get_ticks_msec()) / 800.0
+	var sparkle_pos = offset + Vector2(cos(sparkle_t) * 10.0, sin(sparkle_t) * 10.0)
+	var sparkle_alpha = 0.4 + sin(sparkle_t * 3.0) * 0.3
+	draw_circle(sparkle_pos, 1.2, Color(1, 1, 1, sparkle_alpha))
+	queue_redraw()  # Animate
 
 
 func _process(delta: float) -> void:
@@ -73,6 +83,7 @@ func _move_bounce(dt: float) -> void:
 	var check_x = field.world_to_grid(Vector2(next_x + 8.0 * sign(direction.x), pos.y))
 	if field.in_bounds(check_x) and field.is_blocking(check_x):
 		direction.x = -direction.x
+		AudioManager.play_sfx("yummy_bounce")
 	else:
 		pos.x = next_x
 
@@ -81,14 +92,17 @@ func _move_bounce(dt: float) -> void:
 	var check_y = field.world_to_grid(Vector2(pos.x, next_y + 8.0 * sign(direction.y)))
 	if field.in_bounds(check_y) and field.is_blocking(check_y):
 		direction.y = -direction.y
+		AudioManager.play_sfx("yummy_bounce")
 	else:
 		pos.y = next_y
 
-	# Check if hit a growing beam - collect on barrier hit
+	# Bounce off growing beams too
 	var center_cell = field.world_to_grid(pos)
 	if field.is_growing(center_cell):
-		collect()
-		return
+		direction = -direction
+		pos = global_position  # Revert position
+		AudioManager.play_sfx("yummy_bounce")
+
 
 	# Boundary clamping
 	var field_min = field.global_position + Vector2(8, 8)
@@ -98,15 +112,19 @@ func _move_bounce(dt: float) -> void:
 	if pos.x < field_min.x:
 		pos.x = field_min.x
 		direction.x = abs(direction.x)
+		AudioManager.play_sfx("yummy_bounce")
 	if pos.x > field_max.x:
 		pos.x = field_max.x
 		direction.x = -abs(direction.x)
+		AudioManager.play_sfx("yummy_bounce")
 	if pos.y < field_min.y:
 		pos.y = field_min.y
 		direction.y = abs(direction.y)
+		AudioManager.play_sfx("yummy_bounce")
 	if pos.y > field_max.y:
 		pos.y = field_max.y
 		direction.y = -abs(direction.y)
+		AudioManager.play_sfx("yummy_bounce")
 
 	global_position = pos
 

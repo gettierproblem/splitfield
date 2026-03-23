@@ -10,10 +10,24 @@ func _ready() -> void:
 
 
 func _draw() -> void:
-	super()
-	draw_arc(Vector2(0, 2), 3.0, PI, TAU, 12, Color.WHITE, 2.0)
-	draw_line(Vector2(-3, 2), Vector2(-3, -2), Color(1.0, 0.3, 0.3), 2.0)
-	draw_line(Vector2(3, 2), Vector2(3, -2), Color(0.3, 0.3, 1.0), 2.0)
+	var bob = sin(float(Time.get_ticks_msec()) / 500.0) * 2.0
+	var offset = Vector2(0, bob)
+
+	# Shadow
+	draw_circle(Vector2(1, 3), 6.0, Color(0, 0, 0, 0.15))
+
+	# Thick red horseshoe magnet
+	var magnet_red = Color(0.85, 0.15, 0.1)
+	# Horseshoe arc (top curve)
+	draw_arc(offset + Vector2(0, 1), 4.5, PI, TAU, 16, magnet_red, 3.5)
+	# Left prong
+	draw_line(offset + Vector2(-4.5, 1), offset + Vector2(-4.5, 5), magnet_red, 3.5)
+	# Right prong
+	draw_line(offset + Vector2(4.5, 1), offset + Vector2(4.5, 5), magnet_red, 3.5)
+	# Silver pole tips (N/S)
+	draw_line(offset + Vector2(-4.5, 4), offset + Vector2(-4.5, 6), Color(0.8, 0.8, 0.85), 3.5)
+	draw_line(offset + Vector2(4.5, 4), offset + Vector2(4.5, 6), Color(0.8, 0.8, 0.85), 3.5)
+	queue_redraw()
 
 
 func apply_effect() -> void:

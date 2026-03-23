@@ -10,7 +10,7 @@ var _detonated: bool = false
 
 
 func _ready() -> void:
-	ball_color = Color(0.4, 0.8, 0.1)  # Sickly green
+	ball_color = Color(0.2, 0.9, 0.1)  # Vivid green (matches original sprite 900)
 	speed = 180.0
 	radius = 7.0
 	score_value = 200
@@ -22,26 +22,53 @@ func _ready() -> void:
 
 
 func _draw() -> void:
-	# Oozing, bubbly look
-	var pulse = sin(float(Time.get_ticks_msec()) / 300.0) * 0.15
+	var t = float(Time.get_ticks_msec()) / 1000.0
+	var pulse = sin(t * 3.0) * 0.15
 	var ooze_color = ball_color.lightened(pulse)
 
-	draw_circle(Vector2(1.5, 1.5), radius + 1.0, Color(0, 0, 0, 0.5))
-	draw_circle(Vector2.ZERO, radius, ooze_color)
+	# Shadow
+	draw_circle(Vector2(2.0, 2.0), radius + 1.5, Color(0, 0, 0, 0.45))
 
-	# Bubbles
-	var t = float(Time.get_ticks_msec()) / 1000.0
-	for i in range(3):
-		var angle = t * 2.0 + i * TAU / 3.0
-		var r = radius * 0.4
+	# Wobbling organic outline — radius varies with angle
+	var points = PackedVector2Array()
+	var colors = PackedColorArray()
+	var segments = 24
+	for i in range(segments + 1):
+		var angle = float(i) / segments * TAU
+		var wobble = sin(angle * 3.0 + t * 4.0) * 1.2 + cos(angle * 2.0 + t * 3.0) * 0.8
+		var r = radius + wobble
+		points.append(Vector2(cos(angle) * r, sin(angle) * r))
+		colors.append(ooze_color)
+	if points.size() >= 3:
+		draw_polygon(points, colors)
+
+	# Inner core — brighter green
+	draw_circle(Vector2.ZERO, radius * 0.6, ooze_color.lightened(0.3))
+
+	# Bubbles — larger and more prominent
+	for i in range(4):
+		var angle = t * 2.0 + i * TAU / 4.0
+		var r = radius * (0.35 + sin(t * 1.5 + i) * 0.1)
 		var bubble_pos = Vector2(cos(angle) * r, sin(angle) * r)
-		draw_circle(bubble_pos, 1.5, Color(0.6, 1.0, 0.3, 0.5))
+		draw_circle(bubble_pos, 2.5, Color(0.5, 1.0, 0.2, 0.45))
+		draw_circle(bubble_pos + Vector2(-0.5, -0.5), 1.0, Color(0.8, 1.0, 0.6, 0.5))
 
-	# Fuse indicator - gets redder as time runs out
+	# Drip effect — small circles that drift downward
+	for i in range(2):
+		var drip_y = fmod(t * 8.0 + i * 5.0, 12.0)
+		var drip_x = sin(t + i * 3.14) * 2.0
+		var drip_alpha = clampf(1.0 - drip_y / 12.0, 0.0, 0.6)
+		draw_circle(Vector2(drip_x, radius + drip_y), 1.5, Color(0.3, 0.8, 0.1, drip_alpha))
+
+	# Fuse indicator — only visible after 30% of fuse elapsed, gets redder as time runs out
 	var fuse_ratio = clampf(_fuse_timer / _fuse_duration, 0.0, 1.0)
-	var fuse_color = Color(1.0, fuse_ratio, 0.0, 0.6)
-	draw_arc(Vector2.ZERO, radius + 2.0, 0, TAU * (1.0 - fuse_ratio), 16, fuse_color, 2.0)
+	if fuse_ratio > 0.3:
+		var visible_ratio = (fuse_ratio - 0.3) / 0.7  # 0→1 over the danger zone
+		var fuse_alpha = 0.2 + visible_ratio * 0.5
+		var fuse_color = Color(1.0, 1.0 - visible_ratio, 0.0, fuse_alpha)
+		draw_arc(Vector2.ZERO, radius + 2.0, 0, TAU * (1.0 - fuse_ratio), 16, fuse_color, 1.5)
 
+	# Outer outline
 	draw_arc(Vector2.ZERO, radius, 0, TAU, 32, ball_color.darkened(0.3), 1.5)
 
 

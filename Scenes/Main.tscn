@@ -8,6 +8,8 @@ shader = ExtResource("2")
 shader_parameter/time_scale = 0.3
 shader_parameter/color_intensity = 0.6
 shader_parameter/plasma_scale = 6.0
+shader_parameter/color_a = Color(0.15, 0.04, 0.02, 1)
+shader_parameter/color_b = Color(0.04, 0.02, 0.12, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxTutorial"]
 bg_color = Color(0, 0, 0, 1)

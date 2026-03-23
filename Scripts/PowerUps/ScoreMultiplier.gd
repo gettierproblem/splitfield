@@ -17,6 +17,7 @@ func _ready() -> void:
 	power_up_color = Color(1.0, 1.0, 0.0)
 	super()
 	speed = 0  # Stationary
+	AudioManager.play_sfx("multiplier_appears")
 
 
 func _process(delta: float) -> void:
@@ -57,21 +58,29 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
-	# Round button
-	var pulse = sin(float(Time.get_ticks_msec()) / 300.0) * 0.1
+	# Round button with pulsing glow ring
+	var t = float(Time.get_ticks_msec()) / 300.0
+	var pulse = sin(t) * 0.1
 	var bg_color: Color
 	if _current_index == 0:
 		bg_color = Color(0.6, 0.2, 0.2)  # Red-ish for 1/2
 	else:
 		bg_color = power_up_color.darkened(0.3 + pulse)
 
-	draw_circle(Vector2.ZERO, 10.0, bg_color)
-	draw_arc(Vector2.ZERO, 10.0, 0, TAU, 24, bg_color.lightened(0.3), 1.5)
+	# Pulsing glow ring
+	var glow_alpha = 0.15 + sin(t * 2.0) * 0.1
+	var glow_radius = 14.0 + sin(t) * 2.0
+	draw_circle(Vector2.ZERO, glow_radius, Color(1.0, 1.0, 0.3, glow_alpha))
+
+	# Main button body
+	draw_circle(Vector2.ZERO, 12.0, bg_color)
+	draw_circle(Vector2.ZERO, 10.0, bg_color.lightened(0.1))
+	draw_arc(Vector2.ZERO, 12.0, 0, TAU, 28, bg_color.lightened(0.35), 1.8)
 
 	# Current value text
 	var text_color = Color.RED if _current_index == 0 else Color.WHITE
 	draw_string(ThemeDB.fallback_font, Vector2(-8, 5), _labels[_current_index],
-		HORIZONTAL_ALIGNMENT_LEFT, -1, 10, text_color)
+		HORIZONTAL_ALIGNMENT_LEFT, -1, 12, text_color)
 
 
 func _collect_multiplier() -> void:

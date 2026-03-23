@@ -48,6 +48,8 @@ var BARRIER_COLOR: Color = Color(0.0, 0.9, 1.0, 1.0)
 var FILLED_COLOR: Color = Color(0.05, 0.1, 0.2, 0.75)
 var GROWING_COLOR: Color = Color(1.0, 1.0, 0.0, 1.0)
 var BORDER_COLOR: Color = Color(0.4, 0.4, 0.5)
+var _fill_color_a: Color = Color(0.06, 0.04, 0.18)
+var _fill_color_b: Color = Color(0.04, 0.15, 0.18)
 
 
 func _ready() -> void:
@@ -57,6 +59,11 @@ func _ready() -> void:
 
 	_balls_container = get_node("Balls") as Node2D
 	_power_ups_container = get_node("PowerUps") as Node2D
+
+	# Set level-specific fill colors
+	var fill_colors = LevelPatterns.get_foreground_colors(GameManager.current_level)
+	_fill_color_a = fill_colors[0]
+	_fill_color_b = fill_colors[1]
 
 	_initialize_grid()
 	_initialize_visuals()
@@ -85,9 +92,12 @@ func _initialize_visuals() -> void:
 	if bg_shader != null:
 		var bg_material = ShaderMaterial.new()
 		bg_material.shader = bg_shader
+		var bg_colors = LevelPatterns.get_background_colors(GameManager.current_level)
 		bg_material.set_shader_parameter("time_scale", 0.5)
 		bg_material.set_shader_parameter("color_intensity", 0.8)
 		bg_material.set_shader_parameter("plasma_scale", 8.0)
+		bg_material.set_shader_parameter("color_a", bg_colors[0])
+		bg_material.set_shader_parameter("color_b", bg_colors[1])
 
 		# Create a white texture to apply the shader to
 		var bg_image = Image.create_empty(FIELD_PIXEL_WIDTH, FIELD_PIXEL_HEIGHT, false, Image.FORMAT_RGBA8)
@@ -176,9 +186,9 @@ func _get_filled_gradient(x: int, y: int) -> Color:
 	var wave: float = sin(x * 0.15) * cos(y * 0.12) * 0.1
 	var t: float = clampf(diag + wave, 0.0, 1.0)
 
-	# Gradient from deep blue-purple to dark teal
-	var c1: Color = Color(0.06, 0.04, 0.18)
-	var c2: Color = Color(0.04, 0.15, 0.18)
+	# Level-specific gradient colors
+	var c1: Color = _fill_color_a
+	var c2: Color = _fill_color_b
 	var base_color: Color = c1.lerp(c2, t)
 
 	# Subtle diamond/crosshatch pattern for texture

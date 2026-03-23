@@ -22,16 +22,44 @@ var _bonus_roller: RollingDigitLabel
 
 func _ready() -> void:
 	var panel = get_node("HUDPanel")
+
+	# Apply dark metallic panel background
+	var panel_style = StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.10, 0.10, 0.13)
+	panel_style.border_width_left = 2
+	panel_style.border_width_top = 2
+	panel_style.border_width_right = 2
+	panel_style.border_width_bottom = 2
+	panel_style.border_color = Color(0.25, 0.25, 0.30)
+	# Bevel effect — lighter top/left, darker bottom/right
+	panel_style.shadow_color = Color(0.05, 0.05, 0.08)
+	panel_style.shadow_size = 2
+	panel.add_theme_stylebox_override("panel", panel_style)
+
 	_level_label = get_node("HUDPanel/LevelLabel")
 	_multiplier_label = get_node("HUDPanel/MultiplierLabel")
 	_weapon_label = get_node("HUDPanel/WeaponLabel")
+	_weapon_label.visible = false
 	_orientation_label = get_node("HUDPanel/OrientationLabel")
+	_orientation_label.visible = false
+	# Also hide the separator above them
+	get_node("HUDPanel/Separator3").visible = false
+	get_node("HUDPanel/Separator4").visible = false
 
-	# Replace static labels with rolling digit versions
-	_score_roller = _replace_with_roller(panel, "ScoreLabel", "Score: ", "", 20.0)
-	_lives_roller = _replace_with_roller(panel, "LivesLabel", "Lives: ", "", 20.0, false)
-	_fill_roller = _replace_with_roller(panel, "FillLabel", "Fill: ", "%", 20.0, false)
-	_bonus_roller = _replace_with_roller(panel, "TimedBonusLabel", "Bonus: ", "", 15.0)
+	# Color the level label
+	_level_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.8))
+
+	# Replace static labels with rolling digit versions — color-coded
+	_score_roller = _replace_with_roller(panel, "ScoreLabel", "SCORE  ", "", 20.0)
+	_score_roller.add_theme_color_override("font_color", Color(1.0, 0.2, 0.1))  # Red digits
+
+	_lives_roller = _replace_with_roller(panel, "LivesLabel", "LIVES  ", "", 20.0, false)
+	_lives_roller.add_theme_color_override("font_color", Color(0.2, 1.0, 0.2))  # Green digits
+
+	_fill_roller = _replace_with_roller(panel, "FillLabel", "FILL  ", "%", 20.0, false)
+	_fill_roller.add_theme_color_override("font_color", Color(0.0, 0.9, 1.0))  # Cyan digits
+
+	_bonus_roller = _replace_with_roller(panel, "TimedBonusLabel", "BONUS  ", "", 15.0)
 
 	# Create ammo/charge section
 	_create_ammo_section(panel)
@@ -58,7 +86,7 @@ func _ready() -> void:
 
 
 func _create_ammo_section(panel: Panel) -> void:
-	var base_y: float = 420.0
+	var base_y: float = 340.0
 
 	# Section header
 	var sep = HSeparator.new()
@@ -140,6 +168,14 @@ func _create_ammo_section(panel: Panel) -> void:
 	_magnet_ammo_label.add_theme_font_size_override("font_size", 13)
 	_magnet_ammo_label.add_theme_color_override("font_color", Color(0.8, 0.3, 1.0))
 	panel.add_child(_magnet_ammo_label)
+
+	# Separator between loadout and controls
+	var sep2 = HSeparator.new()
+	sep2.offset_left = 8
+	sep2.offset_top = base_y + 114
+	sep2.offset_right = 200
+	sep2.offset_bottom = base_y + 118
+	panel.add_child(sep2)
 
 
 func _replace_with_roller(parent: Panel, label_name: String, prefix: String,
