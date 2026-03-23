@@ -608,6 +608,61 @@ func get_region_size(seed_pos: Vector2i) -> Dictionary:
 	return result
 
 
+func fill_region_at(seed_world_pos: Vector2) -> void:
+	var seed_pos: Vector2i = world_to_grid(seed_world_pos)
+	if not in_bounds(seed_pos) or _grid[_gi(seed_pos.x, seed_pos.y)] != CellState.EMPTY:
+		return
+
+	var total: int = GRID_WIDTH * GRID_HEIGHT
+	var visited: PackedByteArray = PackedByteArray()
+	visited.resize(total)
+	visited.fill(0)
+
+	var queue: PackedInt32Array = PackedInt32Array()
+	var qh: int = 0
+	var si: int = _gi(seed_pos.x, seed_pos.y)
+	visited[si] = 1
+	queue.push_back(si)
+
+	while qh < queue.size():
+		var idx: int = queue[qh]
+		qh += 1
+		@warning_ignore("integer_division")
+		var x: int = idx / GRID_HEIGHT
+		var y: int = idx % GRID_HEIGHT
+		if x > 0:
+			var ni: int = idx - GRID_HEIGHT
+			if visited[ni] == 0 and _grid[ni] == CellState.EMPTY:
+				visited[ni] = 1
+				queue.push_back(ni)
+		if x < GRID_WIDTH - 1:
+			var ni: int = idx + GRID_HEIGHT
+			if visited[ni] == 0 and _grid[ni] == CellState.EMPTY:
+				visited[ni] = 1
+				queue.push_back(ni)
+		if y > 0:
+			var ni: int = idx - 1
+			if visited[ni] == 0 and _grid[ni] == CellState.EMPTY:
+				visited[ni] = 1
+				queue.push_back(ni)
+		if y < GRID_HEIGHT - 1:
+			var ni: int = idx + 1
+			if visited[ni] == 0 and _grid[ni] == CellState.EMPTY:
+				visited[ni] = 1
+				queue.push_back(ni)
+
+	# Fill all cells in the region
+	for idx in total:
+		if visited[idx] == 1 and _grid[idx] == CellState.EMPTY:
+			_grid[idx] = CellState.FILLED
+			_filled_cells += 1
+			_dirty_cells.push_back(idx)
+
+	_redraw_dirty()
+	var pct: float = float(_filled_cells) / float(_total_cells) * 100.0
+	fill_percent_changed.emit(pct)
+
+
 func get_balls_container() -> Node2D:
 	return _balls_container
 

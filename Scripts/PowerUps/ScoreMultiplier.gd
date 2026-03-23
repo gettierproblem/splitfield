@@ -67,20 +67,30 @@ func _draw() -> void:
 	else:
 		bg_color = power_up_color.darkened(0.3 + pulse)
 
-	# Pulsing glow ring
+	# Pulsing glow hexagon
 	var glow_alpha = 0.15 + sin(t * 2.0) * 0.1
-	var glow_radius = 14.0 + sin(t) * 2.0
-	draw_circle(Vector2.ZERO, glow_radius, Color(1.0, 1.0, 0.3, glow_alpha))
+	var glow_r = 14.0 + sin(t) * 2.0
+	draw_polygon(_make_octagon(glow_r), PackedColorArray([Color(1.0, 1.0, 0.3, glow_alpha)]))
 
-	# Main button body
-	draw_circle(Vector2.ZERO, 12.0, bg_color)
-	draw_circle(Vector2.ZERO, 10.0, bg_color.lightened(0.1))
-	draw_arc(Vector2.ZERO, 12.0, 0, TAU, 28, bg_color.lightened(0.35), 1.8)
+	# Main hexagon body
+	draw_polygon(_make_octagon(12.0), PackedColorArray([bg_color]))
+	draw_polygon(_make_octagon(10.0), PackedColorArray([bg_color.lightened(0.1)]))
+	draw_polyline(_make_octagon(12.0, true), bg_color.lightened(0.35), 1.8)
 
 	# Current value text
 	var text_color = Color.RED if _current_index == 0 else Color.WHITE
 	draw_string(ThemeDB.fallback_font, Vector2(-8, 5), _labels[_current_index],
 		HORIZONTAL_ALIGNMENT_LEFT, -1, 12, text_color)
+
+
+func _make_octagon(r: float, closed: bool = false) -> PackedVector2Array:
+	var pts = PackedVector2Array()
+	for i in 8:
+		var a = i * TAU / 8.0 - PI * 0.5
+		pts.append(Vector2(cos(a) * r, sin(a) * r))
+	if closed:
+		pts.append(pts[0])
+	return pts
 
 
 func _collect_multiplier() -> void:
