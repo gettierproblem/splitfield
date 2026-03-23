@@ -216,9 +216,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -120.0
-offset_top = -100.0
+offset_top = -120.0
 offset_right = 120.0
-offset_bottom = 100.0
+offset_bottom = 120.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -233,7 +233,7 @@ offset_right = -20.0
 offset_bottom = -20.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 10
 
 [node name="PausedLabel" type="Label" parent="PauseMenu/PausePanel/VBoxContainer"]
 layout_mode = 2
@@ -252,6 +252,20 @@ text = "Restart Level"
 [node name="QuitButton" type="Button" parent="PauseMenu/PausePanel/VBoxContainer"]
 layout_mode = 2
 text = "Quit to Menu"
+
+[node name="FPSContainer" type="HBoxContainer" parent="PauseMenu/PausePanel/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 8
+
+[node name="FPSLabel" type="Label" parent="PauseMenu/PausePanel/VBoxContainer/FPSContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+text = "FPS Limit:"
+
+[node name="FPSOption" type="OptionButton" parent="PauseMenu/PausePanel/VBoxContainer/FPSContainer"]
+layout_mode = 2
 
 [node name="GameOverScreen" type="CanvasLayer" parent="."]
 script = ExtResource("5")

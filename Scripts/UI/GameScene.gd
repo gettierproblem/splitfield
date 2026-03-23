@@ -404,10 +404,12 @@ func _has_active_non_multiplier_power_up() -> bool:
 
 
 func _try_spawn_power_up() -> void:
+	var pos = _field.get_random_empty_position()
+	if pos.x < 0:
+		return  # No valid empty space — skip this spawn
 	var lvl: int = GameManager.current_level
 	var power_up: PowerUpBase = _resolve_yummy_type(lvl)
-
-	power_up.global_position = _field.get_random_empty_position()
+	power_up.global_position = pos
 	_field.get_power_ups_container().add_child(power_up)
 
 

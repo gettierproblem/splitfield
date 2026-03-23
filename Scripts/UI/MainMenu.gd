@@ -5,17 +5,25 @@ extends Control
 var _tutorial_page: int = 0
 var _tutorial_pages: Array = []
 
+const FPS_OPTIONS: Array = [0, 30, 60, 120, 144, 240]
+const FPS_LABELS: Array = ["Unlimited", "30", "60", "120", "144", "240"]
+const CONFIG_PATH: String = "user://settings.cfg"
+
 func _ready() -> void:
 	AudioManager.stop_music()
 	get_node("VBoxContainer/NewGameButton").pressed.connect(_on_new_game)
 	get_node("VBoxContainer/HighScoresButton").pressed.connect(_on_high_scores)
 	get_node("VBoxContainer/HowToPlayButton").pressed.connect(_on_how_to_play)
+	get_node("VBoxContainer/OptionsButton").pressed.connect(_on_options)
 	get_node("VBoxContainer/QuitButton").pressed.connect(_on_quit)
 	get_node("HighScoresPanel/BackButton").pressed.connect(_on_high_scores_back)
+	get_node("OptionsPanel/BackButton").pressed.connect(_on_options_back)
 	get_node("TutorialPanel/BackButton").pressed.connect(_on_tutorial_back)
 	get_node("TutorialPanel/PrevButton").pressed.connect(_on_tutorial_prev)
 	get_node("TutorialPanel/NextButton").pressed.connect(_on_tutorial_next)
 	_build_tutorial_pages()
+	_setup_fps_option(get_node("OptionsPanel/FPSOption"))
+	_load_settings()
 	_apply_metallic_styling()
 
 
@@ -46,7 +54,7 @@ func _apply_metallic_styling() -> void:
 	var button_pressed = button_style.duplicate()
 	button_pressed.bg_color = Color(0.10, 0.10, 0.12)
 
-	for btn_name in ["NewGameButton", "HighScoresButton", "HowToPlayButton", "QuitButton"]:
+	for btn_name in ["NewGameButton", "HighScoresButton", "HowToPlayButton", "OptionsButton", "QuitButton"]:
 		var btn = get_node("VBoxContainer/" + btn_name)
 		btn.add_theme_stylebox_override("normal", button_style)
 		btn.add_theme_stylebox_override("hover", button_hover)
@@ -68,13 +76,14 @@ func _apply_metallic_styling() -> void:
 	panel_style.corner_radius_bottom_left = 6
 	panel_style.corner_radius_bottom_right = 6
 	get_node("HighScoresPanel").add_theme_stylebox_override("panel", panel_style)
+	get_node("OptionsPanel").add_theme_stylebox_override("panel", panel_style)
 
 	# High scores list — green digits
 	get_node("HighScoresPanel/HighScoresList").add_theme_color_override("font_color", Color(0.2, 0.9, 0.3))
 
 	# Style back/nav buttons in panels
-	for btn_path in ["HighScoresPanel/BackButton", "TutorialPanel/BackButton",
-			"TutorialPanel/PrevButton", "TutorialPanel/NextButton"]:
+	for btn_path in ["HighScoresPanel/BackButton", "OptionsPanel/BackButton",
+			"TutorialPanel/BackButton", "TutorialPanel/PrevButton", "TutorialPanel/NextButton"]:
 		var btn = get_node(btn_path)
 		btn.add_theme_stylebox_override("normal", button_style)
 		btn.add_theme_stylebox_override("hover", button_hover)
@@ -100,6 +109,46 @@ func _on_high_scores_back() -> void:
 
 func _on_quit() -> void:
 	get_tree().quit()
+
+
+func _on_options() -> void:
+	get_node("VBoxContainer").visible = false
+	get_node("OptionsPanel").visible = true
+
+
+func _on_options_back() -> void:
+	get_node("OptionsPanel").visible = false
+	get_node("VBoxContainer").visible = true
+
+
+func _setup_fps_option(option_btn: OptionButton) -> void:
+	option_btn.clear()
+	for i in FPS_LABELS.size():
+		option_btn.add_item(FPS_LABELS[i], i)
+	option_btn.item_selected.connect(_on_fps_selected)
+
+
+func _on_fps_selected(index: int) -> void:
+	Engine.max_fps = FPS_OPTIONS[index]
+	_save_settings()
+
+
+func _load_settings() -> void:
+	var config = ConfigFile.new()
+	if config.load(CONFIG_PATH) == OK:
+		var fps = config.get_value("video", "max_fps", 0)
+		Engine.max_fps = fps
+		var option_btn = get_node("OptionsPanel/FPSOption")
+		var idx = FPS_OPTIONS.find(fps)
+		if idx >= 0:
+			option_btn.select(idx)
+
+
+func _save_settings() -> void:
+	var config = ConfigFile.new()
+	config.load(CONFIG_PATH)
+	config.set_value("video", "max_fps", Engine.max_fps)
+	config.save(CONFIG_PATH)
 
 
 func _on_how_to_play() -> void:

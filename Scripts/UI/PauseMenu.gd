@@ -1,6 +1,9 @@
 class_name PauseMenu
 extends CanvasLayer
 
+const FPS_OPTIONS: Array = [0, 30, 60, 120, 144, 240]
+const FPS_LABELS: Array = ["Unlimited", "30", "60", "120", "144", "240"]
+const CONFIG_PATH: String = "user://settings.cfg"
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -8,6 +11,7 @@ func _ready() -> void:
 	get_node("PausePanel/VBoxContainer/ResumeButton").pressed.connect(_on_resume)
 	get_node("PausePanel/VBoxContainer/RestartButton").pressed.connect(_on_restart)
 	get_node("PausePanel/VBoxContainer/QuitButton").pressed.connect(_on_quit)
+	_setup_fps_option()
 	_apply_metallic_styling()
 
 
@@ -78,3 +82,23 @@ func _on_restart() -> void:
 
 func _on_quit() -> void:
 	GameManager.return_to_main_menu()
+
+
+func _setup_fps_option() -> void:
+	var option_btn = get_node("PausePanel/VBoxContainer/FPSContainer/FPSOption")
+	option_btn.clear()
+	for i in FPS_LABELS.size():
+		option_btn.add_item(FPS_LABELS[i], i)
+	# Sync with current Engine.max_fps
+	var idx = FPS_OPTIONS.find(Engine.max_fps)
+	if idx >= 0:
+		option_btn.select(idx)
+	option_btn.item_selected.connect(_on_fps_selected)
+
+
+func _on_fps_selected(index: int) -> void:
+	Engine.max_fps = FPS_OPTIONS[index]
+	var config = ConfigFile.new()
+	config.load(CONFIG_PATH)
+	config.set_value("video", "max_fps", Engine.max_fps)
+	config.save(CONFIG_PATH)

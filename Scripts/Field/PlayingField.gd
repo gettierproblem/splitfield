@@ -435,26 +435,31 @@ func does_ball_overlap_growing() -> bool:
 
 
 # Get a random empty position in the field (for spawning)
-# Checks a radius of cells to ensure powerup won't visually overlap barriers/filled areas
+# Builds list of valid candidates with clearance, then picks one randomly
+# Returns Vector2(-1, -1) if no valid position found
 func get_random_empty_position() -> Vector2:
-	var rng = RandomNumberGenerator.new()
-	rng.randomize()
-	var margin: int = 4  # ~16px clearance (powerup visual radius ~9px / 4px per cell)
-	for attempts in 1000:
-		var x: int = rng.randi_range(margin + 1, GRID_WIDTH - margin - 2)
-		var y: int = rng.randi_range(margin + 1, GRID_HEIGHT - margin - 2)
-		var all_empty: bool = true
-		for dy in range(-margin, margin + 1):
-			for dx in range(-margin, margin + 1):
-				if _grid[_gi(x + dx, y + dy)] != CellState.EMPTY:
-					all_empty = false
+	var margin: int = 5
+	var step: int = 4  # Sample every 4th cell — still dense enough for good coverage
+	var candidates: Array[Vector2i] = []
+	var x: int = margin + 1
+	while x <= GRID_WIDTH - margin - 2:
+		var y: int = margin + 1
+		while y <= GRID_HEIGHT - margin - 2:
+			var all_empty: bool = true
+			for dy in range(-margin, margin + 1):
+				for dx in range(-margin, margin + 1):
+					if _grid[_gi(x + dx, y + dy)] != CellState.EMPTY:
+						all_empty = false
+						break
+				if not all_empty:
 					break
-			if not all_empty:
-				break
-		if all_empty:
-			return grid_to_world(Vector2i(x, y))
-	# Fallback: center of field
-	return grid_to_world(Vector2i(GRID_WIDTH / 2, GRID_HEIGHT / 2))
+			if all_empty:
+				candidates.append(Vector2i(x, y))
+			y += step
+		x += step
+	if candidates.is_empty():
+		return Vector2(-1, -1)
+	return grid_to_world(candidates[randi() % candidates.size()])
 
 
 # Count balls that are the sole ball in their connected empty region
