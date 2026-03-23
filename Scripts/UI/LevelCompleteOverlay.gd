@@ -115,6 +115,15 @@ func show_level_complete(fill_percent: float, timed_bonus: int = 0) -> void:
 		_multiplier_label.visible = false
 		_multiplier_value.visible = false
 
+	# Resize panel to fit optional rows
+	var extra_height: int = 0
+	if _overachiever_label.visible:
+		extra_height += 56
+	if _multiplier_label.visible:
+		extra_height += 56
+	_panel.offset_top = -180 - extra_height / 2.0
+	_panel.offset_bottom = 180 + extra_height / 2.0
+
 	ScoreManager.apply_multiplier_and_add(subtotal)
 	ScoreManager.multiplier = 1.0
 
