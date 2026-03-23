@@ -36,6 +36,7 @@ var _magnet_loaded: bool = false
 
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _level_complete: bool = false
+var _fps_label: Label
 
 
 func _ready() -> void:
@@ -78,6 +79,16 @@ func _ready() -> void:
 	_hud.update_ammo(_laser_ammo, _cluster_magnets)
 	_hud.update_laser_charge(_laser_charged)
 	_hud.update_barrier_charge(_barrier_charge, MAX_BARRIER_CHARGE)
+
+	# FPS counter — top-left overlay
+	var fps_layer = CanvasLayer.new()
+	fps_layer.layer = 100
+	add_child(fps_layer)
+	_fps_label = Label.new()
+	_fps_label.position = Vector2(12, 4)
+	_fps_label.add_theme_font_size_override("font_size", 12)
+	_fps_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
+	fps_layer.add_child(_fps_label)
 
 	call_deferred("_connect_cursor_ship")
 
@@ -151,6 +162,8 @@ func _on_orientation_changed(vertical: bool) -> void:
 
 
 func _process(delta: float) -> void:
+	_fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
+
 	if _level_complete:
 		return
 
