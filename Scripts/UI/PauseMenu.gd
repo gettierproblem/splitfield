@@ -55,8 +55,8 @@ func _apply_metallic_styling() -> void:
 			child.add_theme_color_override("font_hover_color", Color(0.3, 1.0, 0.4))
 
 
-func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("pause"):
+func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("pause") or event.is_action_pressed("ui_cancel"):
 		_toggle_pause()
 		get_viewport().set_input_as_handled()
 
