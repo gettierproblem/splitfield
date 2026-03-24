@@ -11,6 +11,8 @@ func _ready() -> void:
 	get_node("PausePanel/VBoxContainer/ResumeButton").pressed.connect(_on_resume)
 	get_node("PausePanel/VBoxContainer/RestartButton").pressed.connect(_on_restart)
 	get_node("PausePanel/VBoxContainer/QuitButton").pressed.connect(_on_quit)
+	if OS.has_feature("web"):
+		get_node("PausePanel/VBoxContainer/QuitButton").visible = false
 	_setup_fps_option()
 	_apply_metallic_styling()
 

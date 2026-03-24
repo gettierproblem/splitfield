@@ -16,6 +16,8 @@ func _ready() -> void:
 	get_node("VBoxContainer/HowToPlayButton").pressed.connect(_on_how_to_play)
 	get_node("VBoxContainer/OptionsButton").pressed.connect(_on_options)
 	get_node("VBoxContainer/QuitButton").pressed.connect(_on_quit)
+	if OS.has_feature("web"):
+		get_node("VBoxContainer/QuitButton").visible = false
 	get_node("HighScoresPanel/BackButton").pressed.connect(_on_high_scores_back)
 	get_node("OptionsPanel/BackButton").pressed.connect(_on_options_back)
 	get_node("TutorialPanel/BackButton").pressed.connect(_on_tutorial_back)
