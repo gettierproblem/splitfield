@@ -5,15 +5,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build & Run
 
 ```bash
-# Run natively
-"/c/Users/Verit/AppData/Local/Microsoft/WinGet/Packages/GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe/Godot_v4.6.1-stable_win64_console.exe" --path "C:/Users/Verit/barrack"
+# Set GODOT to the Godot 4.6 binary path for your system
+GODOT="/c/Users/Verit/AppData/Local/Microsoft/WinGet/Packages/GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe/Godot_v4.6.1-stable_win64_console.exe"
 
-# Export for web
-"/c/Users/Verit/AppData/Local/Microsoft/WinGet/Packages/GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe/Godot_v4.6.1-stable_win64_console.exe" --headless --export-release "Web" "build/web/index.html" --path "C:/Users/Verit/barrack"
+# Run natively
+"$GODOT" --path .
+
+# Export for web (requires export templates, see below)
+"$GODOT" --headless --export-release "Web" "build/web/index.html" --path .
 
 # Serve web build (requires Node.js)
 node serve.js
 # Opens at http://localhost:8080 with SharedArrayBuffer headers
+```
+
+**Web export templates**: If the web export fails with "No export template found", download and extract them:
+```bash
+# Download the full export templates package via GitHub CLI
+gh release download 4.6.1-stable --repo godotengine/godot --pattern "Godot_v4.6.1-stable_export_templates.tpz" --dir /tmp
+
+# Extract just the web templates to the Godot templates directory
+# Windows: %APPDATA%/Godot/export_templates/4.6.1.stable/
+# Linux: ~/.local/share/godot/export_templates/4.6.1.stable/
+# macOS: ~/Library/Application Support/Godot/export_templates/4.6.1.stable/
+unzip -j /tmp/Godot_v4.6.1-stable_export_templates.tpz "templates/web_release.zip" "templates/web_debug.zip" -d "<templates_dir>/4.6.1.stable/"
 ```
 
 No test framework is configured. Verify changes by building and running the game.

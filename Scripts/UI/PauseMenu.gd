@@ -11,8 +11,6 @@ func _ready() -> void:
 	get_node("PausePanel/VBoxContainer/ResumeButton").pressed.connect(_on_resume)
 	get_node("PausePanel/VBoxContainer/RestartButton").pressed.connect(_on_restart)
 	get_node("PausePanel/VBoxContainer/QuitButton").pressed.connect(_on_quit)
-	if OS.has_feature("web"):
-		get_node("PausePanel/VBoxContainer/QuitButton").visible = false
 	_setup_fps_option()
 	_apply_metallic_styling()
 
@@ -58,7 +56,11 @@ func _apply_metallic_styling() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	# Check keydown first; fall back to keyup for Escape on web (Chrome eats keydown)
 	if event.is_action_pressed("pause") or event.is_action_pressed("ui_cancel"):
+		_toggle_pause()
+		get_viewport().set_input_as_handled()
+	elif OS.has_feature("web") and event.is_action_released("ui_cancel"):
 		_toggle_pause()
 		get_viewport().set_input_as_handled()
 

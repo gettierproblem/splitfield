@@ -27,6 +27,7 @@ func _ready() -> void:
 	direction = Vector2(cos(angle), sin(angle)).normalized()
 
 	z_index = 3
+	scale = Vector2(1.8, 1.8)
 
 
 func _draw() -> void:
