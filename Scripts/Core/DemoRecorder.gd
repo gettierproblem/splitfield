@@ -58,6 +58,12 @@ var _log_counter: int = 0
 var _active_touches: Dictionary = {}  # index -> position
 var _last_multitouch_time: float = 0.0
 
+# Swipe gesture detection
+var _touch_start_pos: Vector2 = Vector2.ZERO
+var _touch_start_time: float = 0.0
+const SWIPE_MIN_DIST: float = 50.0  # pixels
+const SWIPE_MAX_TIME: float = 0.4  # seconds
+
 signal playback_finished()
 signal playback_frame_advanced(frame: int, total: int)
 
@@ -79,6 +85,9 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		if event.pressed:
 			_active_touches[event.index] = event.position
+			if event.index == 0:
+				_touch_start_pos = event.position
+				_touch_start_time = Time.get_ticks_msec() / 1000.0
 			if _active_touches.size() >= 2:
 				var now := Time.get_ticks_msec() / 1000.0
 				if now - _last_multitouch_time > 0.5:
@@ -88,6 +97,19 @@ func _input(event: InputEvent) -> void:
 					_pending_actions &= ~ACT_FIRE
 				_active_touches.clear()
 		else:
+			# On finger release, check for swipe gesture
+			if event.index == 0 and _active_touches.size() <= 1:
+				var delta: Vector2 = event.position - _touch_start_pos
+				var elapsed: float = Time.get_ticks_msec() / 1000.0 - _touch_start_time
+				if absf(delta.y) > SWIPE_MIN_DIST and elapsed < SWIPE_MAX_TIME and absf(delta.y) > absf(delta.x):
+					# Vertical swipe detected — suppress fire
+					_pending_actions &= ~ACT_FIRE
+					if delta.y < 0:
+						# Swipe up → load laser
+						record_action(ACT_LOAD_LASER)
+					else:
+						# Swipe down → load magnet
+						record_action(ACT_LOAD_MAGNET)
 			_active_touches.erase(event.index)
 
 	# Pinch gesture (touchpad / Chrome device emulation)
