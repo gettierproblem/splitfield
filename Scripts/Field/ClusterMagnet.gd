@@ -29,6 +29,13 @@ func _process(delta: float) -> void:
 		queue_free()
 		return
 
+	# Remove if inside a filled area
+	if _field != null:
+		var cell = _field.get_cell_at_world(global_position)
+		if cell == PlayingField.CellState.FILLED:
+			queue_free()
+			return
+
 	# Pull all balls toward this wall magnet (only if path is clear)
 	if _field != null:
 		var balls_container: Node2D = _field.get_balls_container()

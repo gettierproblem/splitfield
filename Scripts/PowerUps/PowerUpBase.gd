@@ -11,7 +11,6 @@ extends Node2D
 var field: PlayingField
 var direction: Vector2
 var _collected: bool = false
-var _lifetime: float = 30.0  # Expires after 30 seconds
 
 
 func _ready() -> void:
@@ -56,22 +55,15 @@ func _draw() -> void:
 func _process(delta: float) -> void:
 	if _collected:
 		return
-	var dt = delta
-
-	_lifetime -= dt
-	if _lifetime <= 0:
-		AudioManager.play_sfx("missed_yummy")
-		queue_free()
-		return
 
 	# Bounce movement
 	if field != null:
-		_move_bounce(dt)
+		_move_bounce(delta)
 
-	# Check if enclosed by filled area
+	# Check if enclosed by filled or barrier area
 	if field != null:
 		var cell = field.get_cell_at_world(global_position)
-		if cell == PlayingField.CellState.FILLED:
+		if cell == PlayingField.CellState.FILLED or cell == PlayingField.CellState.BARRIER:
 			collect()
 
 

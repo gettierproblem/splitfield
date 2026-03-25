@@ -2,53 +2,62 @@ class_name ScoreMultiplierGD
 extends PowerUpBase
 
 ## Score Multiplier appears stationary and cycles through values: 1/2, 2, 3, 4.
-## The value shown when captured determines the multiplier for the level.
+## Has its own dedicated spawn/despawn system managed by GameScene.
+## Collected by enclosure only (not barrier touch or growing beam).
+## Respawns if missed; permanently gone once collected.
+
+signal multiplier_collected()
+signal multiplier_despawned()
 
 var _values: Array[float] = [0.5, 2.0, 3.0, 4.0]
 var _labels: Array[String] = ["1/2", "2x", "3x", "4x"]
 var _current_index: int = 0
 var _cycle_timer: float = 0.0
-var _cycle_speed: float = 0.2  # seconds per value
-var _sm_lifetime: float = 20.0
+var _cycle_duration: float = 0.33
+var _sm_lifetime: float = 0.0
 var _sm_collected: bool = false
+var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 
 func _ready() -> void:
 	power_up_color = Color(1.0, 1.0, 0.0)
 	super()
 	speed = 0  # Stationary
+	_rng.randomize()
+
+	# Randomized on-screen lifetime: ~7-19 seconds (per powerups.md)
+	_sm_lifetime = _rng.randf_range(6.7, 19.2)
+
 	AudioManager.play_sfx("multiplier_appears")
 
 
 func _process(delta: float) -> void:
 	if _sm_collected:
 		return
-	var dt = delta
 
-	_sm_lifetime -= dt
+	_sm_lifetime -= delta
 	if _sm_lifetime <= 0:
 		AudioManager.play_sfx("missed_yummy")
+		multiplier_despawned.emit()
 		queue_free()
 		return
 
-	# Cycle through values
-	_cycle_timer += dt
-	if _cycle_timer >= _cycle_speed:
-		_cycle_timer -= _cycle_speed
+	# Cycle through values with randomized step duration
+	_cycle_timer += delta
+	if _cycle_timer >= _cycle_duration:
+		_cycle_timer -= _cycle_duration
 		_current_index = (_current_index + 1) % _values.size()
 
 	queue_redraw()
 
+	# Collected by enclosure (filled area) or completed barrier touch
 	if field != null:
 		var center_cell = field.world_to_grid(global_position)
-
-		# Collected if enclosed by filled area
 		var cell = field.get_cell(center_cell)
 		if cell == PlayingField.CellState.FILLED:
 			_collect_multiplier()
 			return
 
-		# Collected if a completed barrier touches it
 		for dx in range(-3, 4):
 			for dy in range(-3, 4):
 				var check = Vector2i(center_cell.x + dx, center_cell.y + dy)
@@ -105,6 +114,7 @@ func _collect_multiplier() -> void:
 		AudioManager.play_sfx("powerup_collect")
 
 	ScoreManager.multiplier = mult
+	multiplier_collected.emit()
 	queue_free()
 
 
@@ -113,5 +123,4 @@ func collected_by_growing_beam() -> bool:
 
 
 func apply_effect() -> void:
-	# Handled by _collect_multiplier
-	pass
+	_collect_multiplier()

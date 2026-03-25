@@ -10,7 +10,11 @@ var _level_complete_overlay: LevelCompleteOverlay
 # Power-up spawn timer
 var _power_up_timer: float = 5.0
 const POWER_UP_SPAWN_INTERVAL: float = 5.0
-var _multiplier_spawned: bool = false
+# Score Multiplier dedicated spawn system
+var _multiplier_collected: bool = false
+var _multiplier_active: bool = false
+var _multiplier_spawn_timer: float = 0.0
+var _multiplier_initial_delay: float = 0.0
 
 # Bosco manager
 var _bosco_manager: BoscoManager
@@ -81,6 +85,10 @@ func _ready() -> void:
 		_bosco_manager = BoscoManager.new()
 		add_child(_bosco_manager)
 		_bosco_manager.initialize_for_level(_field)
+
+	# Score Multiplier initial delay
+	_multiplier_initial_delay = _rng.randf_range(4.0, 67.0)
+	_multiplier_spawn_timer = _multiplier_initial_delay
 
 	_hud.update_all()
 	_hud.update_timed_bonus(int(_timed_bonus))
@@ -195,6 +203,12 @@ func _process(delta: float) -> void:
 			_power_up_timer = POWER_UP_SPAWN_INTERVAL
 			if not _has_active_non_multiplier_power_up():
 				_try_spawn_power_up()
+
+		# Score Multiplier dedicated spawn system
+		if not _multiplier_collected and not _multiplier_active and ScoreManager.score >= 5000:
+			_multiplier_spawn_timer -= delta
+			if _multiplier_spawn_timer <= 0:
+				_spawn_multiplier()
 
 
 func _input(event: InputEvent) -> void:
@@ -493,10 +507,7 @@ func _resolve_yummy_type(lvl: int) -> PowerUpBase:
 		{"create": func(): return LifeKeyGD.new(), "weight": 5},
 	]
 
-	if not _multiplier_spawned:
-		pool.append({"create": func():
-			_multiplier_spawned = true
-			return ScoreMultiplierGD.new(), "weight": 20})
+	# Score Multiplier has its own dedicated spawn system — not in this pool
 
 	# Sum weights and pick
 	var total_weight: int = 0
@@ -513,11 +524,34 @@ func _resolve_yummy_type(lvl: int) -> PowerUpBase:
 	return LightningBoltGD.new()
 
 
+func _spawn_multiplier() -> void:
+	var pos = _field.get_random_empty_position()
+	if pos.x < 0:
+		return
+	_multiplier_active = true
+	var mult = ScoreMultiplierGD.new()
+	mult.global_position = pos
+	mult.multiplier_collected.connect(_on_multiplier_collected)
+	mult.multiplier_despawned.connect(_on_multiplier_despawned)
+	_field.get_power_ups_container().add_child(mult)
+
+
+func _on_multiplier_collected() -> void:
+	_multiplier_active = false
+	_multiplier_collected = true
+
+
+func _on_multiplier_despawned() -> void:
+	_multiplier_active = false
+	# Respawn after 8-33 seconds
+	_multiplier_spawn_timer = _rng.randf_range(8.0, 33.0)
+
+
 func _collect_enclosed_powerups() -> void:
 	for child in _field.get_power_ups_container().get_children():
 		if child is PowerUpBase and is_instance_valid(child):
 			var cell = _field.get_cell_at_world(child.global_position)
-			if cell == PlayingField.CellState.FILLED:
+			if cell == PlayingField.CellState.FILLED or cell == PlayingField.CellState.BARRIER:
 				child.collect()
 
 
