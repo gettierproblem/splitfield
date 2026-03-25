@@ -21,7 +21,7 @@ func _ready() -> void:
 
 	# Random initial direction
 	var rng = RandomNumberGenerator.new()
-	rng.randomize()
+	DemoRecorder.seed_rng(rng)
 	var angle = rng.randf_range(0, TAU)
 	direction = Vector2(cos(angle), sin(angle)).normalized()
 
@@ -52,7 +52,7 @@ func _draw() -> void:
 	queue_redraw()  # Animate
 
 
-func _process(delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if _collected:
 		return
 

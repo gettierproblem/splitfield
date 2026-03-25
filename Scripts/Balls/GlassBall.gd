@@ -4,12 +4,14 @@ extends BallBaseGD
 @export var durability: int = 3
 var _hits: int = 0
 var _crack_angles: Array = []
+var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 
 func _ready() -> void:
 	ball_color = Color(0.7, 0.4, 0.9, 0.7)  # Purple glass
 	speed = 220.0
 	score_value = 120
+	DemoRecorder.seed_rng(_rng)
 	super._ready()
 
 
@@ -97,7 +99,7 @@ func _check_ball_collisions() -> void:
 
 				# Non-glass collision: take crack damage
 				_hits += 1
-				_crack_angles.append(randf_range(0, TAU))
+				_crack_angles.append(_rng.randf_range(0, TAU))
 				AudioManager.play_sfx("glass_shatter")
 				queue_redraw()
 				if _hits >= durability:
@@ -116,6 +118,7 @@ func _glass_collision_shatter() -> void:
 
 		for ball in balls_in_region:
 			if is_instance_valid(ball) and ball != self:
+				ball.is_active = false
 				ScoreManager.add_regular_score(ball.score_value)
 				GameManager.record_kill(ball.get_type_name())
 				ball.queue_free()
@@ -127,12 +130,14 @@ func _glass_collision_shatter() -> void:
 				if d < 60.0:
 					child.trigger_death("glass")
 
+	is_active = false
 	ScoreManager.add_regular_score(score_value)
 	GameManager.record_kill("GlassBall")
 	queue_free()
 
 
 func _shatter() -> void:
+	is_active = false
 	ScoreManager.add_regular_score(score_value)
 	GameManager.record_kill("GlassBall")
 	AudioManager.play_sfx("glass_shatter")
@@ -150,7 +155,7 @@ func _shatter() -> void:
 
 func _on_hit_growing_beam() -> bool:
 	_hits += 1
-	_crack_angles.append(randf_range(0, TAU))
+	_crack_angles.append(_rng.randf_range(0, TAU))
 	AudioManager.play_sfx("glass_shatter")
 	queue_redraw()
 	if _hits >= durability:
@@ -162,6 +167,7 @@ func _on_hit_growing_beam() -> bool:
 
 
 func on_hit_by_nuke() -> void:
+	is_active = false
 	ScoreManager.add_regular_score(500)
 	AudioManager.play_sfx("glass_shatter")
 	queue_free()

@@ -15,6 +15,21 @@ func _on_game_over() -> void:
 	if GameManager.sandbox_entity != "":
 		GameManager.return_to_main_menu()
 		return
+	# During demo playback, show game over but with replay/stop options
+	if DemoRecorder.is_playback():
+		visible = true
+		get_node("GameOverPanel").visible = true
+		get_node("DimOverlay").visible = true
+		get_tree().paused = true
+		get_node("GameOverPanel/VBoxContainer/FinalScoreLabel").text = "Final Score: %s" % _format_number(ScoreManager.score)
+		get_node("GameOverPanel/VBoxContainer/LevelReachedLabel").text = "Level Reached: %s" % str(GameManager.current_level)
+		get_node("GameOverPanel/VBoxContainer/LivesLabel").text = ""
+		get_node("GameOverPanel/VBoxContainer/TimeOutLabel").text = "Demo Complete"
+		get_node("GameOverPanel/VBoxContainer/PlayAgainButton").text = "Replay"
+		get_node("GameOverPanel/VBoxContainer/MainMenuButton").text = "Stop"
+		_style_button(get_node("GameOverPanel/VBoxContainer/PlayAgainButton"))
+		_style_button(get_node("GameOverPanel/VBoxContainer/MainMenuButton"))
+		return
 	AudioManager.play_sfx("game_over")
 	AudioManager.stop_music()
 	visible = true
@@ -52,7 +67,9 @@ func _on_game_over() -> void:
 	_style_button(get_node("GameOverPanel/VBoxContainer/PlayAgainButton"))
 	_style_button(get_node("GameOverPanel/VBoxContainer/MainMenuButton"))
 
-	_save_high_score(ScoreManager.score)
+	# Save demo recording and high score
+	var demo_path: String = DemoRecorder.stop_and_save()
+	_save_high_score(ScoreManager.score, GameManager.current_level, demo_path)
 
 
 func _style_button(btn: Button) -> void:
@@ -78,16 +95,22 @@ func _style_button(btn: Button) -> void:
 func _on_play_again() -> void:
 	get_tree().paused = false
 	visible = false
-	GameManager.start_new_game()
+	if DemoRecorder.is_playback():
+		DemoRecorder.replay()
+	else:
+		GameManager.start_new_game()
 
 
 func _on_main_menu() -> void:
 	get_tree().paused = false
 	visible = false
-	GameManager.return_to_main_menu()
+	if DemoRecorder.is_playback():
+		DemoRecorder.stop_playback()
+	else:
+		GameManager.return_to_main_menu()
 
 
-func _save_high_score(score: int) -> void:
+func _save_high_score(score: int, level: int, demo_path: String) -> void:
 	var path: String = "user://highscores.json"
 	var scores: Array = []
 
@@ -97,16 +120,26 @@ func _save_high_score(score: int) -> void:
 		file.close()
 		if json is Array:
 			for item in json:
-				scores.append(int(item))
+				if item is Dictionary:
+					scores.append(item)
+				else:
+					# Backward compat: old format was just [int, ...]
+					scores.append({"score": int(item), "level": 0, "date": "", "demo": ""})
 
-	scores.append(score)
-	scores.sort()
-	scores.reverse()
+	var now := Time.get_datetime_dict_from_system()
+	var date_str := "%04d-%02d-%02d" % [now["year"], now["month"], now["day"]]
+	scores.append({"score": score, "level": level, "date": date_str, "demo": demo_path})
+	scores.sort_custom(func(a, b): return int(a["score"]) > int(b["score"]))
 	if scores.size() > 10:
+		# Delete demo files for evicted entries
+		for i in range(10, scores.size()):
+			var evicted_demo: String = scores[i].get("demo", "")
+			if evicted_demo != "" and FileAccess.file_exists(evicted_demo):
+				DirAccess.remove_absolute(evicted_demo)
 		scores.resize(10)
 
 	var out_file = FileAccess.open(path, FileAccess.WRITE)
-	out_file.store_string(JSON.stringify(scores))
+	out_file.store_string(JSON.stringify(scores, "\t"))
 	out_file.close()
 
 

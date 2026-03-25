@@ -34,7 +34,7 @@ var return_to_tutorial_page: int = 0
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_game_scene = load("res://Scenes/Game/GameScene.tscn") as PackedScene
-	_rng.randomize()
+	DemoRecorder.seed_rng(_rng)
 
 
 func get_current_level_data() -> LevelData:
@@ -170,6 +170,11 @@ func start_new_game() -> void:
 	laser_ammo = 0
 	cluster_magnets = 0
 	is_game_active = true
+	# Start demo recording (unless we're in playback mode)
+	if not DemoRecorder.is_playback():
+		DemoRecorder.start_recording()
+	# Re-seed the GameManager RNG for determinism (must happen after start_recording sets master_seed)
+	DemoRecorder.seed_rng(_rng)
 	load_game_scene()
 
 

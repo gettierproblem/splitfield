@@ -147,10 +147,14 @@ func _create_ammo_section(panel: Panel) -> void:
 
 	panel.add_child(_laser_charge_bar)
 
-	# Laser ammo
+	# Laser ammo — icon + count
+	var ammo_icon = _AmmoIcon.new()
+	ammo_icon.position = Vector2(22, base_y + 73)
+	panel.add_child(ammo_icon)
+
 	_laser_ammo_label = Label.new()
-	_laser_ammo_label.text = "Ammo: 0"
-	_laser_ammo_label.offset_left = 8
+	_laser_ammo_label.text = "0"
+	_laser_ammo_label.offset_left = 38
 	_laser_ammo_label.offset_top = base_y + 64
 	_laser_ammo_label.offset_right = 200
 	_laser_ammo_label.offset_bottom = base_y + 82
@@ -158,10 +162,14 @@ func _create_ammo_section(panel: Panel) -> void:
 	_laser_ammo_label.add_theme_color_override("font_color", Color(0.2, 0.8, 0.2))
 	panel.add_child(_laser_ammo_label)
 
-	# Cluster magnets
+	# Cluster magnets — icon + count
+	var magnet_icon = _MagnetIcon.new()
+	magnet_icon.position = Vector2(22, base_y + 97)
+	panel.add_child(magnet_icon)
+
 	_magnet_ammo_label = Label.new()
-	_magnet_ammo_label.text = "Magnets: 0"
-	_magnet_ammo_label.offset_left = 8
+	_magnet_ammo_label.text = "0"
+	_magnet_ammo_label.offset_left = 38
 	_magnet_ammo_label.offset_top = base_y + 88
 	_magnet_ammo_label.offset_right = 200
 	_magnet_ammo_label.offset_bottom = base_y + 106
@@ -254,8 +262,8 @@ func update_orientation(vertical: bool) -> void:
 
 
 func update_ammo(laser_ammo: int, cluster_magnets: int) -> void:
-	_laser_ammo_label.text = "Ammo: %s" % str(laser_ammo)
-	_magnet_ammo_label.text = "Magnets: %s" % str(cluster_magnets)
+	_laser_ammo_label.text = str(laser_ammo)
+	_magnet_ammo_label.text = str(cluster_magnets)
 
 	_laser_ammo_label.add_theme_color_override("font_color",
 		Color(0.2, 0.8, 0.2) if laser_ammo > 0 else Color(0.5, 0.5, 0.5))
@@ -291,3 +299,36 @@ func _exit_tree() -> void:
 		ScoreManager.lives_changed.disconnect(_on_lives_changed)
 		ScoreManager.multiplier_changed.disconnect(_on_multiplier_changed)
 		ScoreManager.extra_life_earned.disconnect(_on_extra_life_earned)
+
+
+# --- HUD Icons ---
+
+class _AmmoIcon extends Node2D:
+	func _draw() -> void:
+		# Green ammo crate (matches AmmoTin powerup)
+		var dark_green = Color(0.15, 0.5, 0.1)
+		var light_green = Color(0.3, 0.7, 0.2)
+		draw_rect(Rect2(Vector2(-6, -5), Vector2(12, 11)), dark_green)
+		draw_line(Vector2(-6, -5), Vector2(6, -5), light_green, 1.5)
+		draw_line(Vector2(-6, -5), Vector2(-6, 6), light_green, 1.0)
+		draw_line(Vector2(6, -5), Vector2(6, 6), dark_green.darkened(0.3), 1.0)
+		draw_line(Vector2(-6, 6), Vector2(6, 6), dark_green.darkened(0.3), 1.0)
+		# Red star
+		var star_color = Color(0.9, 0.15, 0.1)
+		for i in range(5):
+			var angle_outer = i * TAU / 5.0 - PI * 0.5
+			var angle_inner = (i + 0.5) * TAU / 5.0 - PI * 0.5
+			var outer_pt = Vector2(cos(angle_outer), sin(angle_outer)) * 3.5
+			var inner_pt = Vector2(cos(angle_inner), sin(angle_inner)) * 1.5
+			draw_line(outer_pt, inner_pt, star_color, 1.2)
+
+
+class _MagnetIcon extends Node2D:
+	func _draw() -> void:
+		# Red horseshoe magnet (matches ClusterMagnetPickup)
+		var magnet_red = Color(0.85, 0.15, 0.1)
+		draw_arc(Vector2(0, 1), 4.5, PI, TAU, 16, magnet_red, 3.5)
+		draw_line(Vector2(-4.5, 1), Vector2(-4.5, 5), magnet_red, 3.5)
+		draw_line(Vector2(4.5, 1), Vector2(4.5, 5), magnet_red, 3.5)
+		draw_line(Vector2(-4.5, 4), Vector2(-4.5, 6), Color(0.8, 0.8, 0.85), 3.5)
+		draw_line(Vector2(4.5, 4), Vector2(4.5, 6), Color(0.8, 0.8, 0.85), 3.5)

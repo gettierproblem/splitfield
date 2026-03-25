@@ -28,12 +28,12 @@ func apply_effect() -> void:
 	var children = balls_container.get_children()
 	# Shuffle
 	var rng = RandomNumberGenerator.new()
-	rng.randomize()
+	DemoRecorder.seed_rng(rng)
 
 	for child in children:
 		if destroyed >= balls_to_destroy:
 			break
-		if child is BallBaseGD and is_instance_valid(child):
+		if child is BallBaseGD and is_instance_valid(child) and child.is_active:
 			if rng.randf() < 0.5:
 				child.on_hit_by_nuke()
 				destroyed += 1

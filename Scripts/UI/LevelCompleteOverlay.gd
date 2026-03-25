@@ -154,6 +154,19 @@ func show_level_complete(fill_percent: float, timed_bonus: int = 0) -> void:
 	_next_level_button.add_theme_stylebox_override("normal", btn_style)
 	_next_level_button.add_theme_color_override("font_color", Color(0.2, 0.9, 0.3))
 
+	# During demo playback, show final values immediately (no tween animation).
+	# Stay visible and paused so ACT_NEXT_LEVEL is processed at the correct frame.
+	if DemoRecorder.is_playback():
+		for item in reveal_items:
+			item[0].modulate.a = 1.0
+			item[1].modulate.a = 1.0
+			var target: int = item[2]
+			if target >= 0:
+				item[1].text = _format_number(target)
+		_total_score_label.modulate.a = 1.0
+		_next_level_button.modulate.a = 1.0
+		return
+
 	# Animated tally reveal — each row fades in, then its value counts up from 0
 	var tween = create_tween()
 	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
@@ -199,7 +212,15 @@ func _count_isolated_regions() -> int:
 	return 0
 
 
+func _physics_process(_delta: float) -> void:
+	# During playback, auto-advance when DemoRecorder signals NEXT_LEVEL
+	if DemoRecorder.is_playback() and visible:
+		if DemoRecorder.is_action_this_frame(DemoRecorder.ACT_NEXT_LEVEL):
+			_on_next_level()
+
+
 func _on_next_level() -> void:
+	DemoRecorder.record_action(DemoRecorder.ACT_NEXT_LEVEL)
 	get_tree().paused = false
 	visible = false
 	GameManager.advance_to_next_level()

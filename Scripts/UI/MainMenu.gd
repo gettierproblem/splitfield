@@ -12,13 +12,12 @@ const CONFIG_PATH: String = "user://settings.cfg"
 func _ready() -> void:
 	AudioManager.stop_music()
 	get_node("VBoxContainer/NewGameButton").pressed.connect(_on_new_game)
-	get_node("VBoxContainer/HighScoresButton").pressed.connect(_on_high_scores)
 	get_node("VBoxContainer/HowToPlayButton").pressed.connect(_on_how_to_play)
 	get_node("VBoxContainer/OptionsButton").pressed.connect(_on_options)
 	get_node("VBoxContainer/QuitButton").pressed.connect(_on_quit)
 	if OS.has_feature("web"):
 		get_node("VBoxContainer/QuitButton").visible = false
-	get_node("HighScoresPanel/BackButton").pressed.connect(_on_high_scores_back)
+	get_node("HighScoresPanel/ClearButton").pressed.connect(_on_clear_high_scores)
 	get_node("OptionsPanel/BackButton").pressed.connect(_on_options_back)
 	get_node("TutorialPanel/BackButton").pressed.connect(_on_tutorial_back)
 	get_node("TutorialPanel/PrevButton").pressed.connect(_on_tutorial_prev)
@@ -27,11 +26,13 @@ func _ready() -> void:
 	_setup_fps_option(get_node("OptionsPanel/FPSOption"))
 	_load_settings()
 	_apply_metallic_styling()
+	_load_high_scores()
 
 	# Return to tutorial if coming back from sandbox
 	if GameManager.return_to_tutorial:
 		GameManager.return_to_tutorial = false
 		get_node("VBoxContainer").visible = false
+		get_node("HighScoresPanel").visible = false
 		get_node("TutorialPanel").visible = true
 		_tutorial_page = GameManager.return_to_tutorial_page
 		_show_tutorial_page()
@@ -64,7 +65,7 @@ func _apply_metallic_styling() -> void:
 	var button_pressed = button_style.duplicate()
 	button_pressed.bg_color = Color(0.10, 0.10, 0.12)
 
-	for btn_name in ["NewGameButton", "HighScoresButton", "HowToPlayButton", "OptionsButton", "QuitButton"]:
+	for btn_name in ["NewGameButton", "HowToPlayButton", "OptionsButton", "QuitButton"]:
 		var btn = get_node("VBoxContainer/" + btn_name)
 		btn.add_theme_stylebox_override("normal", button_style)
 		btn.add_theme_stylebox_override("hover", button_hover)
@@ -85,14 +86,13 @@ func _apply_metallic_styling() -> void:
 	panel_style.corner_radius_top_right = 6
 	panel_style.corner_radius_bottom_left = 6
 	panel_style.corner_radius_bottom_right = 6
-	get_node("HighScoresPanel").add_theme_stylebox_override("panel", panel_style)
+	var hs_panel_style = panel_style.duplicate()
+	hs_panel_style.bg_color = Color(0.05, 0.05, 0.07, 0.8)
+	get_node("HighScoresPanel").add_theme_stylebox_override("panel", hs_panel_style)
 	get_node("OptionsPanel").add_theme_stylebox_override("panel", panel_style)
 
-	# High scores list — green digits
-	get_node("HighScoresPanel/HighScoresList").add_theme_color_override("font_color", Color(0.2, 0.9, 0.3))
-
 	# Style back/nav buttons in panels
-	for btn_path in ["HighScoresPanel/BackButton", "OptionsPanel/BackButton",
+	for btn_path in ["HighScoresPanel/ClearButton", "OptionsPanel/BackButton",
 			"TutorialPanel/BackButton", "TutorialPanel/PrevButton", "TutorialPanel/NextButton"]:
 		var btn = get_node(btn_path)
 		btn.add_theme_stylebox_override("normal", button_style)
@@ -106,15 +106,21 @@ func _on_new_game() -> void:
 	GameManager.start_new_game()
 
 
-func _on_high_scores() -> void:
-	get_node("HighScoresPanel").visible = true
-	get_node("VBoxContainer").visible = false
+func _on_clear_high_scores() -> void:
+	var path: String = "user://highscores.json"
+	# Delete associated demo files
+	if FileAccess.file_exists(path):
+		var file = FileAccess.open(path, FileAccess.READ)
+		var json = JSON.parse_string(file.get_as_text())
+		file.close()
+		if json is Array:
+			for entry in json:
+				if entry is Dictionary:
+					var demo: String = entry.get("demo", "")
+					if demo != "" and FileAccess.file_exists(demo):
+						DirAccess.remove_absolute(demo)
+		DirAccess.remove_absolute(path)
 	_load_high_scores()
-
-
-func _on_high_scores_back() -> void:
-	get_node("HighScoresPanel").visible = false
-	get_node("VBoxContainer").visible = true
 
 
 func _on_quit() -> void:
@@ -123,12 +129,14 @@ func _on_quit() -> void:
 
 func _on_options() -> void:
 	get_node("VBoxContainer").visible = false
+	get_node("HighScoresPanel").visible = false
 	get_node("OptionsPanel").visible = true
 
 
 func _on_options_back() -> void:
 	get_node("OptionsPanel").visible = false
 	get_node("VBoxContainer").visible = true
+	get_node("HighScoresPanel").visible = true
 
 
 func _setup_fps_option(option_btn: OptionButton) -> void:
@@ -163,6 +171,7 @@ func _save_settings() -> void:
 
 func _on_how_to_play() -> void:
 	get_node("VBoxContainer").visible = false
+	get_node("HighScoresPanel").visible = false
 	get_node("TutorialPanel").visible = true
 	_tutorial_page = 0
 	_show_tutorial_page()
@@ -171,6 +180,7 @@ func _on_how_to_play() -> void:
 func _on_tutorial_back() -> void:
 	get_node("TutorialPanel").visible = false
 	get_node("VBoxContainer").visible = true
+	get_node("HighScoresPanel").visible = true
 
 
 func _on_tutorial_prev() -> void:
@@ -314,9 +324,8 @@ func _build_tutorial_pages() -> void:
 [b]Goal:[/b] Fill 80% or more of the playing field by drawing barriers. Bouncing balls try to destroy your barriers before they complete.
 
 [b]Controls:[/b]
-  [color=cyan]Left Click[/color] — Fire a horizontal barrier
-  [color=cyan]Right Click[/color] — Fire a vertical barrier
-  [color=cyan]Tab[/color] — Toggle horizontal/vertical orientation
+  [color=cyan]Left Click[/color] — Fire barrier
+  [color=cyan]Space / Right Click[/color] — Toggle horizontal/vertical orientation
   [color=cyan]ESC[/color] — Pause
 
 [b]Barrier Charge:[/b]
@@ -408,25 +417,92 @@ func _create_bosco_specimen() -> Node2D:
 
 
 func _load_high_scores() -> void:
-	var label = get_node("HighScoresPanel/HighScoresList")
+	var container = get_node("HighScoresPanel/HighScoresScroll/HighScoresList")
+	# Clear existing entries
+	for child in container.get_children():
+		child.queue_free()
+
 	var path: String = "user://highscores.json"
 	if not FileAccess.file_exists(path):
-		label.text = "No high scores yet!"
+		_add_no_scores_label(container)
 		return
 
 	var file = FileAccess.open(path, FileAccess.READ)
 	var json = JSON.parse_string(file.get_as_text())
 	file.close()
 
-	if not (json is Array):
-		label.text = "No high scores yet!"
+	if not (json is Array) or json.is_empty():
+		_add_no_scores_label(container)
 		return
 
-	var text: String = ""
 	for i in range(json.size()):
-		text += "%s.  %s\n" % [str(i + 1), _format_number(int(json[i]))]
+		var entry = json[i]
+		var score: int
+		var level: int = 0
+		var demo_path: String = ""
 
-	label.text = text if text.length() > 0 else "No high scores yet!"
+		if entry is Dictionary:
+			score = int(entry.get("score", 0))
+			level = int(entry.get("level", 0))
+			demo_path = entry.get("demo", "")
+		else:
+			# Old format: just an int
+			score = int(entry)
+
+		var text: String = "%d.  %s" % [i + 1, _format_number(score)]
+		if level > 0:
+			text += "  —  Level %d" % level
+
+		var has_demo: bool = demo_path != "" and FileAccess.file_exists(demo_path)
+
+		if has_demo:
+			var btn = Button.new()
+			btn.text = text
+			btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+			btn.custom_minimum_size = Vector2(0, 28)
+			_style_score_button(btn)
+			var captured_path = demo_path
+			btn.pressed.connect(func(): _play_demo(captured_path))
+			container.add_child(btn)
+		else:
+			var lbl = Label.new()
+			lbl.text = text
+			lbl.add_theme_font_size_override("font_size", 16)
+			lbl.add_theme_color_override("font_color", Color(0.2, 0.9, 0.3))
+			lbl.custom_minimum_size = Vector2(0, 28)
+			container.add_child(lbl)
+
+
+func _add_no_scores_label(container: VBoxContainer) -> void:
+	var lbl = Label.new()
+	lbl.text = "No high scores yet!"
+	lbl.add_theme_font_size_override("font_size", 18)
+	lbl.add_theme_color_override("font_color", Color(0.2, 0.9, 0.3))
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	container.add_child(lbl)
+
+
+func _style_score_button(btn: Button) -> void:
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.08, 0.08, 0.10, 0.6)
+	style.border_width_bottom = 1
+	style.border_color = Color(0.2, 0.2, 0.25)
+	style.corner_radius_top_left = 3
+	style.corner_radius_top_right = 3
+	style.corner_radius_bottom_left = 3
+	style.corner_radius_bottom_right = 3
+	btn.add_theme_stylebox_override("normal", style)
+	var hover = style.duplicate()
+	hover.bg_color = Color(0.12, 0.15, 0.18, 0.8)
+	hover.border_color = Color(0.3, 0.8, 0.4)
+	btn.add_theme_stylebox_override("hover", hover)
+	btn.add_theme_color_override("font_color", Color(0.2, 0.9, 0.3))
+	btn.add_theme_color_override("font_hover_color", Color(0.4, 1.0, 0.5))
+	btn.add_theme_font_size_override("font_size", 16)
+
+
+func _play_demo(demo_path: String) -> void:
+	DemoRecorder.start_playback(demo_path)
 
 
 func _format_number(num: int) -> String:

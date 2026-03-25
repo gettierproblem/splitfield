@@ -9,6 +9,7 @@ var _music_player: AudioStreamPlayer
 var _music_playlist: Array[String] = []
 var _music_index: int = 0
 var _music_looping: bool = true
+var _sfx_enabled: bool = true
 
 
 func _ready() -> void:
@@ -28,7 +29,13 @@ func _ready() -> void:
 	_music_player.finished.connect(_on_music_finished)
 
 
+func set_sfx_enabled(enabled: bool) -> void:
+	_sfx_enabled = enabled
+
+
 func play_sfx(sfx_name: String) -> void:
+	if not _sfx_enabled:
+		return
 	var path := "res://Assets/Audio/SFX/%s.wav" % sfx_name
 	if not ResourceLoader.exists(path):
 		path = "res://Assets/Audio/SFX/%s.ogg" % sfx_name
@@ -78,6 +85,14 @@ func _on_music_finished() -> void:
 	# Advance to next track in playlist, loop back to start
 	_music_index = (_music_index + 1) % _music_playlist.size()
 	_play_track(_music_playlist[_music_index])
+
+
+func pause_music() -> void:
+	_music_player.stream_paused = true
+
+
+func resume_music() -> void:
+	_music_player.stream_paused = false
 
 
 func stop_music() -> void:

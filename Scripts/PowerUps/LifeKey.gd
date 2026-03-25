@@ -11,7 +11,7 @@ func _ready() -> void:
 	super()
 
 	var rng = RandomNumberGenerator.new()
-	rng.randomize()
+	DemoRecorder.seed_rng(rng)
 	lives_granted = rng.randi_range(1, 5)
 
 

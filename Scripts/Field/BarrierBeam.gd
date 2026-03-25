@@ -40,7 +40,7 @@ func set_speed_multiplier(mult: float) -> void:
 	_speed_multiplier = mult
 
 
-func _process(delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if not is_growing:
 		return
 

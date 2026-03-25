@@ -23,7 +23,7 @@ func _ready() -> void:
 	power_up_color = Color(1.0, 1.0, 0.0)
 	super()
 	speed = 0  # Stationary
-	_rng.randomize()
+	DemoRecorder.seed_rng(_rng)
 
 	# Randomized on-screen lifetime: ~7-19 seconds (per powerups.md)
 	_sm_lifetime = _rng.randf_range(6.7, 19.2)
@@ -31,7 +31,7 @@ func _ready() -> void:
 	AudioManager.play_sfx("multiplier_appears")
 
 
-func _process(delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if _sm_collected:
 		return
 

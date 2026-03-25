@@ -47,7 +47,7 @@ func _draw() -> void:
 	draw_circle(Vector2(-0.5, -8.5), 0.8, Color(1.0, 0.5, 0.5, 0.6))  # Cherry highlight
 
 
-func _process(delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if _detonated:
 		return
 
@@ -84,7 +84,7 @@ func _detonate() -> void:
 		return
 
 	var rng = RandomNumberGenerator.new()
-	rng.randomize()
+	DemoRecorder.seed_rng(rng)
 	var count = rng.randi_range(4, 7)
 
 	var container = field.get_power_ups_container()

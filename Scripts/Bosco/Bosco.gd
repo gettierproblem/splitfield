@@ -58,7 +58,7 @@ var in_rampage: bool:
 
 func initialize(field: PlayingField, start_pos: float) -> void:
 	_field = field
-	_rng.randomize()
+	DemoRecorder.seed_rng(_rng)
 	_state = BoscoState.HUNTING
 	_speed = BASE_SPEED
 	# Start at a random edge position
@@ -72,7 +72,7 @@ func initialize(field: PlayingField, start_pos: float) -> void:
 	z_index = 4
 
 
-func _process(delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	match _state:
 		BoscoState.HUNTING:
 			_seek_player(delta)

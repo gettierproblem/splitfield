@@ -17,7 +17,7 @@ func _ready() -> void:
 	super._ready()
 
 	var rng = RandomNumberGenerator.new()
-	rng.randomize()
+	DemoRecorder.seed_rng(rng)
 	_fuse_duration = rng.randf_range(15.0, 25.0)
 
 
@@ -92,6 +92,7 @@ func _physics_process(delta: float) -> void:
 
 		if empty_count < 30:
 			# Disarmed by trapping - just destroy quietly
+			is_active = false
 			ScoreManager.add_regular_score(score_value)
 			AudioManager.play_sfx("nuke_explosion")
 			queue_free()
@@ -107,7 +108,7 @@ func _split() -> void:
 	var balls_container = field.get_balls_container()
 
 	var rng = RandomNumberGenerator.new()
-	rng.randomize()
+	DemoRecorder.seed_rng(rng)
 
 	# Split into 2-3 pawn balls, with small chance of a nuke
 	var count = rng.randi_range(2, 3)
@@ -123,5 +124,6 @@ func _split() -> void:
 			rng.randf_range(-8.0, 8.0), rng.randf_range(-8.0, 8.0))
 		balls_container.add_child(new_ball)
 
+	is_active = false
 	AudioManager.play_sfx("glass_shatter")
 	queue_free()

@@ -56,6 +56,9 @@ func _apply_metallic_styling() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	# Disable pause menu during demo playback
+	if DemoRecorder.is_playback():
+		return
 	# Check keydown first; fall back to keyup for Escape on web (Chrome eats keydown)
 	if event.is_action_pressed("pause") or event.is_action_pressed("ui_cancel"):
 		_toggle_pause()

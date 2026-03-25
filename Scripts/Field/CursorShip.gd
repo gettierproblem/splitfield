@@ -37,7 +37,10 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	global_position = get_global_mouse_position()
+	if DemoRecorder.is_playback():
+		global_position = DemoRecorder.get_mouse_position()
+	else:
+		global_position = get_global_mouse_position()
 
 	var field = get_parent() as PlayingField
 	if field != null:
@@ -49,7 +52,9 @@ func _process(_delta: float) -> void:
 
 		var game_active: bool = GameManager.is_game_active and not GameManager.is_paused
 
-		if not _visible or not game_active:
+		if DemoRecorder.is_playback():
+			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		elif not _visible or not game_active:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		else:
 			Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
@@ -57,29 +62,46 @@ func _process(_delta: float) -> void:
 	queue_redraw()
 
 
+func _physics_process(_delta: float) -> void:
+	# Emit signals from DemoRecorder action flags — works in both recording and playback.
+	# During recording, _input() only records flags; signals fire here for consistent timing.
+	if DemoRecorder.is_action_this_frame(DemoRecorder.ACT_TOGGLE_ORIENT):
+		_vertical = not _vertical
+		orientation_changed.emit(_vertical)
+	if DemoRecorder.is_action_this_frame(DemoRecorder.ACT_LOAD_LASER):
+		load_laser_requested.emit()
+	if DemoRecorder.is_action_this_frame(DemoRecorder.ACT_LOAD_MAGNET):
+		load_magnet_requested.emit()
+	if DemoRecorder.is_action_this_frame(DemoRecorder.ACT_UNLOAD):
+		unload_requested.emit()
+
+
 func _input(event: InputEvent) -> void:
+	# During playback, skip real input (handled by _physics_process)
+	if DemoRecorder.is_playback():
+		return
+
+	# Only record action flags here — actual signal emission happens in _physics_process
 	if event is InputEventMouseButton and event.pressed:
 		var mouse_event: InputEventMouseButton = event as InputEventMouseButton
 		if mouse_event.button_index == MOUSE_BUTTON_RIGHT:
-			_vertical = not _vertical
-			orientation_changed.emit(_vertical)
+			DemoRecorder.record_action(DemoRecorder.ACT_TOGGLE_ORIENT)
 		elif mouse_event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			load_laser_requested.emit()
+			DemoRecorder.record_action(DemoRecorder.ACT_LOAD_LASER)
 		elif mouse_event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			load_magnet_requested.emit()
+			DemoRecorder.record_action(DemoRecorder.ACT_LOAD_MAGNET)
 		elif mouse_event.button_index == MOUSE_BUTTON_MIDDLE:
-			unload_requested.emit()
+			DemoRecorder.record_action(DemoRecorder.ACT_UNLOAD)
 
 	if event is InputEventKey and event.pressed and not event.echo:
 		var key_event: InputEventKey = event as InputEventKey
 		match key_event.keycode:
-			KEY_TAB:
-				_vertical = not _vertical
-				orientation_changed.emit(_vertical)
+			KEY_SPACE:
+				DemoRecorder.record_action(DemoRecorder.ACT_TOGGLE_ORIENT)
 			KEY_W:
-				load_laser_requested.emit()
+				DemoRecorder.record_action(DemoRecorder.ACT_LOAD_LASER)
 			KEY_D:
-				load_magnet_requested.emit()
+				DemoRecorder.record_action(DemoRecorder.ACT_LOAD_MAGNET)
 
 
 func _draw() -> void:

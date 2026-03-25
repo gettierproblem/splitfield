@@ -38,9 +38,9 @@ anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
 offset_left = -200.0
-offset_top = 80.0
+offset_top = 40.0
 offset_right = 200.0
-offset_bottom = 160.0
+offset_bottom = 110.0
 grow_horizontal = 2
 theme_override_font_sizes/font_size = 64
 text = "SPLITFIELD"
@@ -48,26 +48,15 @@ horizontal_alignment = 1
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -100.0
-offset_top = -60.0
-offset_right = 100.0
-offset_bottom = 80.0
-grow_horizontal = 2
-grow_vertical = 2
+offset_left = 80.0
+offset_top = 200.0
+offset_right = 280.0
+offset_bottom = 500.0
 theme_override_constants/separation = 12
 
 [node name="NewGameButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 text = "New Game"
-
-[node name="HighScoresButton" type="Button" parent="VBoxContainer"]
-layout_mode = 2
-text = "High Scores"
 
 [node name="HowToPlayButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
@@ -80,6 +69,55 @@ text = "Options"
 [node name="QuitButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 text = "Quit"
+
+[node name="HighScoresPanel" type="Panel" parent="."]
+layout_mode = 1
+offset_left = 550.0
+offset_top = 140.0
+offset_right = 940.0
+offset_bottom = 700.0
+
+[node name="TitleLabel" type="Label" parent="HighScoresPanel"]
+layout_mode = 1
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 380.0
+offset_bottom = 40.0
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
+text = "HIGH SCORES"
+horizontal_alignment = 1
+
+[node name="HintLabel" type="Label" parent="HighScoresPanel"]
+layout_mode = 1
+offset_left = 10.0
+offset_top = 40.0
+offset_right = 380.0
+offset_bottom = 58.0
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.5, 0.5, 0.55, 1)
+text = "Click a score to watch the demo"
+horizontal_alignment = 1
+
+[node name="HighScoresScroll" type="ScrollContainer" parent="HighScoresPanel"]
+layout_mode = 1
+offset_left = 10.0
+offset_top = 62.0
+offset_right = 380.0
+offset_bottom = 500.0
+
+[node name="HighScoresList" type="VBoxContainer" parent="HighScoresPanel/HighScoresScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+add_theme_constant_override/separation = 4
+
+[node name="ClearButton" type="Button" parent="HighScoresPanel"]
+layout_mode = 1
+offset_left = 130.0
+offset_top = 510.0
+offset_right = 260.0
+offset_bottom = 545.0
+text = "Clear Scores"
 
 [node name="OptionsPanel" type="Panel" parent="."]
 visible = false
@@ -130,50 +168,6 @@ offset_left = 90.0
 offset_top = 105.0
 offset_right = 230.0
 offset_bottom = 140.0
-text = "Back"
-
-[node name="HighScoresPanel" type="Panel" parent="."]
-visible = false
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -160.0
-offset_top = -200.0
-offset_right = 160.0
-offset_bottom = 200.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="TitleLabel" type="Label" parent="HighScoresPanel"]
-layout_mode = 1
-offset_left = 10.0
-offset_top = 10.0
-offset_right = 310.0
-offset_bottom = 40.0
-theme_override_font_sizes/font_size = 22
-theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
-text = "HIGH SCORES"
-horizontal_alignment = 1
-
-[node name="HighScoresList" type="Label" parent="HighScoresPanel"]
-layout_mode = 1
-offset_left = 10.0
-offset_top = 50.0
-offset_right = 310.0
-offset_bottom = 340.0
-theme_override_font_sizes/font_size = 18
-text = "No high scores yet!"
-horizontal_alignment = 1
-
-[node name="BackButton" type="Button" parent="HighScoresPanel"]
-layout_mode = 1
-offset_left = 90.0
-offset_top = 350.0
-offset_right = 230.0
-offset_bottom = 385.0
 text = "Back"
 
 [node name="TutorialPanel" type="Panel" parent="."]
@@ -251,4 +245,3 @@ theme_override_font_sizes/font_size = 12
 theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
 text = "Page 1 / 4"
 horizontal_alignment = 1
-

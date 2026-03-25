@@ -20,7 +20,7 @@ func _ready() -> void:
 
 	# Initialize random direction
 	var rng = RandomNumberGenerator.new()
-	rng.randomize()
+	DemoRecorder.seed_rng(rng)
 	var angle = rng.randf_range(0, TAU)
 	direction = Vector2(cos(angle), sin(angle)).normalized()
 
@@ -163,12 +163,14 @@ func _on_hit_growing_beam() -> bool:
 
 
 func on_hit_by_nuke() -> void:
+	is_active = false
 	ScoreManager.add_regular_score(500)  # FAQ: 500 per nuked ball
 	GameManager.record_kill(get_type_name())
 	queue_free()
 
 
 func destroy() -> void:
+	is_active = false
 	GameManager.record_kill(get_type_name())
 	queue_free()
 

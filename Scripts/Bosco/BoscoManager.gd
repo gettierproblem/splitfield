@@ -24,12 +24,12 @@ func initialize_for_level(field: PlayingField) -> void:
 	_bosco_active = false
 	_spawn_timer = INITIAL_SPAWN_DELAY
 	_patrol_sound_timer = 0.0
-	_rng.randomize()
+	DemoRecorder.seed_rng(_rng)
 
 	AudioManager.play_sfx("bosco_patrol")
 
 
-func _process(delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	# Bosco only spawns at level 10+
 	if GameManager.current_level < 10:
 		return
@@ -72,6 +72,7 @@ func _try_spawn_bosco() -> void:
 
 	var perim_pos: float = _world_to_perimeter(host.global_position)
 
+	host.is_active = false
 	host.queue_free()
 
 	_bosco = BoscoShark.new()

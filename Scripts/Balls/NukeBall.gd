@@ -226,6 +226,7 @@ func _detonate(balls_in_region: Array) -> void:
 	# Destroy all other balls in the same region
 	for ball in balls_in_region:
 		if ball != self and is_instance_valid(ball):
+			ball.is_active = false
 			death_positions.append(ball.global_position)
 			ScoreManager.add_regular_score(500)
 			GameManager.record_kill(ball.get_type_name())
@@ -246,6 +247,7 @@ func _detonate(balls_in_region: Array) -> void:
 	field.add_child(effect)
 
 	# Destroy self
+	is_active = false
 	GameManager.record_kill("NukeBall")
 	queue_free()
 
@@ -260,10 +262,10 @@ class _NukeEffect extends Node2D:
 
 	func _ready() -> void:
 		z_index = 10
-		_rng.randomize()
+		DemoRecorder.seed_rng(_rng)
 		_generate_bolts()
 
-	func _process(delta: float) -> void:
+	func _physics_process(delta: float) -> void:
 		_timer -= delta
 		# Regenerate bolts every few frames for flickering effect
 		if fmod(_timer, 0.08) < delta:

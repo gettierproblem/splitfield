@@ -20,7 +20,7 @@ func initialize(field: PlayingField, wall_pos: Vector2) -> void:
 	z_index = 5
 
 
-func _process(delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	var dt: float = delta
 	_timer -= dt
 	_pulse_phase += dt * 4.0

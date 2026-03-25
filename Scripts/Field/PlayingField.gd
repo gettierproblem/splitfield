@@ -36,6 +36,7 @@ var fill_percentage: float:
 var _balls_container: Node2D
 var _power_ups_container: Node2D
 var _active_beam: BarrierBeam
+var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 # Visual
 var _field_image: Image
@@ -65,6 +66,7 @@ func _ready() -> void:
 	_fill_color_a = fill_colors[0]
 	_fill_color_b = fill_colors[1]
 
+	DemoRecorder.seed_rng(_rng)
 	_initialize_grid()
 	_initialize_visuals()
 	_needs_full_redraw = true
@@ -459,7 +461,7 @@ func get_random_empty_position() -> Vector2:
 		x += step
 	if candidates.is_empty():
 		return Vector2(-1, -1)
-	return grid_to_world(candidates[randi() % candidates.size()])
+	return grid_to_world(candidates[_rng.randi() % candidates.size()])
 
 
 # Count balls that are the sole ball in their connected empty region

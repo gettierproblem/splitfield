@@ -44,7 +44,7 @@ var _fps_label: Label
 
 
 func _ready() -> void:
-	_rng.randomize()
+	DemoRecorder.seed_rng(_rng)
 
 	_field = get_node("PlayingField")
 	_hud = get_node("HUD")
@@ -177,41 +177,56 @@ func _on_orientation_changed(vertical: bool) -> void:
 	_hud.update_orientation(vertical)
 
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	_fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
 
-	if _level_complete:
-		return
 
-	# Timed bonus countdown
-	if _timed_bonus > 0:
-		_timed_bonus = maxf(0, _timed_bonus - _timed_bonus_decay_per_second * delta)
-		_hud.update_timed_bonus(int(_timed_bonus))
+func _physics_process(delta: float) -> void:
+	if not _level_complete:
+		# Timed bonus countdown
+		if _timed_bonus > 0:
+			_timed_bonus = maxf(0, _timed_bonus - _timed_bonus_decay_per_second * delta)
+			_hud.update_timed_bonus(int(_timed_bonus))
 
-		if _timed_bonus <= 0:
-			_level_complete = true
-			if GameManager.sandbox_entity != "":
-				GameManager.return_to_main_menu()
+			if _timed_bonus <= 0:
+				_level_complete = true
+				if GameManager.sandbox_entity != "":
+					GameManager.return_to_main_menu()
+					return
+				GameManager.trigger_game_over()
 				return
-			GameManager.trigger_game_over()
-			return
 
-	# Power-up spawning: every 5 seconds, only if no active non-multiplier powerup on field
-	if GameManager.sandbox_entity == "":
-		_power_up_timer -= delta
-		if _power_up_timer <= 0:
-			_power_up_timer = POWER_UP_SPAWN_INTERVAL
-			if not _has_active_non_multiplier_power_up():
-				_try_spawn_power_up()
+		# Power-up spawning: every 5 seconds, only if no active non-multiplier powerup on field
+		if GameManager.sandbox_entity == "":
+			_power_up_timer -= delta
+			if _power_up_timer <= 0:
+				_power_up_timer = POWER_UP_SPAWN_INTERVAL
+				if not _has_active_non_multiplier_power_up():
+					_try_spawn_power_up()
 
-		# Score Multiplier dedicated spawn system
-		if not _multiplier_collected and not _multiplier_active and ScoreManager.score >= 5000:
-			_multiplier_spawn_timer -= delta
-			if _multiplier_spawn_timer <= 0:
-				_spawn_multiplier()
+			# Score Multiplier dedicated spawn system
+			if not _multiplier_collected and not _multiplier_active and ScoreManager.score >= 5000:
+				_multiplier_spawn_timer -= delta
+				if _multiplier_spawn_timer <= 0:
+					_spawn_multiplier()
+
+	# Handle fire action from DemoRecorder (works in both recording and playback).
+	# During recording, _input() only records the action flag — actual firing
+	# happens here in _physics_process to match playback timing exactly.
+	if not _level_complete and DemoRecorder.is_action_this_frame(DemoRecorder.ACT_FIRE):
+		_execute_fire(DemoRecorder.get_mouse_position())
+	# Check if seeking has reached its target
+	if DemoRecorder._seeking:
+		DemoRecorder._check_seek_completion()
+	# Debug: log frame state for desync analysis
+	DemoRecorder.log_frame_state(_field)
 
 
 func _input(event: InputEvent) -> void:
+	# During playback, skip real input (handled by _physics_process)
+	if DemoRecorder.is_playback():
+		return
+
 	if event is InputEventMouseButton and event.pressed \
 			and event.button_index == MOUSE_BUTTON_LEFT:
 		if _level_complete:
@@ -223,30 +238,43 @@ func _input(event: InputEvent) -> void:
 
 		if mouse_pos.x >= field_min.x and mouse_pos.x <= field_max.x \
 				and mouse_pos.y >= field_min.y and mouse_pos.y <= field_max.y:
-			var vertical: bool = _cursor_ship.is_vertical if _cursor_ship else false
+			# Only record the action — actual fire happens in _physics_process
+			DemoRecorder.record_action(DemoRecorder.ACT_FIRE)
 
-			if _magnet_loaded:
-				_fire_cluster_magnet(mouse_pos, vertical)
-				_magnet_loaded = false
-				if _cursor_ship:
-					_cursor_ship.set_loaded_weapon(CursorShip.WeaponType.LASER_CARTRIDGE)
-					_cursor_ship.set_charged_shot(_laser_charged)
-				_hud.update_weapon(CursorShip.WeaponType.LASER_CARTRIDGE)
-			else:
-				# Fire barrier beam
-				var charge_ratio: float = _barrier_charge / MAX_BARRIER_CHARGE
-				var beam_speed: float = 0.5 + charge_ratio * 1.5
-				var was_laser: bool = _laser_charged
 
-				if _laser_charged:
-					beam_speed = 4.0
-					_laser_charged = false
-					if _cursor_ship:
-						_cursor_ship.set_charged_shot(false)
-					_hud.update_laser_charge(false)
+func _execute_fire(mouse_pos: Vector2) -> void:
+	## Shared fire logic for both live play and demo playback.
+	var field_min: Vector2 = _field.global_position
+	var field_max: Vector2 = field_min + Vector2(PlayingField.FIELD_PIXEL_WIDTH, PlayingField.FIELD_PIXEL_HEIGHT)
 
-				AudioManager.play_sfx("laser_fire" if was_laser else "barrier_fire")
-				_field.start_beam(mouse_pos, vertical, beam_speed)
+	if mouse_pos.x < field_min.x or mouse_pos.x > field_max.x \
+			or mouse_pos.y < field_min.y or mouse_pos.y > field_max.y:
+		return
+
+	var vertical: bool = _cursor_ship.is_vertical if _cursor_ship else false
+
+	if _magnet_loaded:
+		_fire_cluster_magnet(mouse_pos, vertical)
+		_magnet_loaded = false
+		if _cursor_ship:
+			_cursor_ship.set_loaded_weapon(CursorShip.WeaponType.LASER_CARTRIDGE)
+			_cursor_ship.set_charged_shot(_laser_charged)
+		_hud.update_weapon(CursorShip.WeaponType.LASER_CARTRIDGE)
+	else:
+		# Fire barrier beam
+		var charge_ratio: float = _barrier_charge / MAX_BARRIER_CHARGE
+		var beam_speed: float = 0.5 + charge_ratio * 1.5
+		var was_laser: bool = _laser_charged
+
+		if _laser_charged:
+			beam_speed = 4.0
+			_laser_charged = false
+			if _cursor_ship:
+				_cursor_ship.set_charged_shot(false)
+			_hud.update_laser_charge(false)
+
+		AudioManager.play_sfx("laser_fire" if was_laser else "barrier_fire")
+		_field.start_beam(mouse_pos, vertical, beam_speed)
 
 
 func _fire_cluster_magnet(world_pos: Vector2, vertical: bool) -> void:
