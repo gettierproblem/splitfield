@@ -9,8 +9,21 @@ Fire barrier beams across the field to section off space while bouncing balls tr
 ## Controls
 
 - **Left click** — fire beam
-- **Right click / Tab** — toggle horizontal/vertical orientation
+- **Space / Right click** — toggle horizontal/vertical orientation
 - **W / Scroll up** — load laser cartridge (fast beam, uses ammo)
 - **D / Scroll down** — load cluster magnet (attracts balls, uses ammo)
 - **Middle click** — unload
 - **Esc** — pause
+
+## Demo Replay
+
+Every game is automatically recorded. High scores appear on the main menu — click any score to watch its demo.
+
+**Playback controls:**
+- **Progress slider** — drag to seek (forward or backward)
+- **Speed** — cycle through 1x / 2x / 4x / 8x
+- **Pause / Play** — pause and resume playback
+- **Replay** — restart the demo from the beginning
+- **Stop** — return to main menu
+
+Demos are stored as compact binary files (~360KB for 10 minutes) using deterministic input recording with seeded RNG replay.

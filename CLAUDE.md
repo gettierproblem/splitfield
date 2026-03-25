@@ -42,7 +42,8 @@ Splitfield is a Godot 4.6 clone of Barrack, the 1996 Ambrosia Software game — 
 **Autoload Singletons** (registered in project.godot):
 - `GameManager` — game state, procedural level generation, kill/respawn tracking, ball/ammo carryover
 - `ScoreManager` — FAQ-accurate scoring (level-scaled fill points, tiered over-achiever, level-bracket extra lives)
-- `AudioManager` — SFX pool (12 players) + music player
+- `AudioManager` — SFX pool (12 players) + music player, pause/resume support
+- `DemoRecorder` — demo recording/playback, deterministic seed dispensing, input proxy
 - Accessed directly by autoload name in GDScript
 
 **Grid System** (PlayingField): 200x184 cells, 4px each = 800x736 field. `CellState` enum: `Empty, Barrier, Filled, Growing`. Image-based rendering via `Image` + `Sprite2D` scaled 4x. BFS flood fill seeds from ball positions with 2-cell radius. Uses flat `PackedByteArray` grid with index-based BFS queue and dirty cell tracking for performance.
@@ -51,13 +52,15 @@ Splitfield is a Godot 4.6 clone of Barrack, the 1996 Ambrosia Software game — 
 
 **Bosco the Shark** (Scripts/Bosco/): Separate entity from the ball system (Node2D, not BallBase). Managed by `BoscoManager` which handles spawn timing and host ball takeover. Primarily patrols the field perimeter but periodically dives through the interior. States: Patrolling, Diving, Gotcha, BallHit, Rampage (2x speed), Tired (half speed), Killed. Spawns at level 10+ by taking over a random ball. Only dies when caught in newly enclosed barrier area. Scoring: 800 (isolation), 2500 (glass shatter), 5000 (nuke), 10x during rampage.
 
-**Loadout System** (CursorShip + GameScene): W/scroll-up loads a laser cartridge (consumes ammo, fires 4x speed beam). D/scroll-down loads a cluster magnet (places two wall magnets that attract balls for 5s). Middle click unloads. Tab toggles H/V orientation. Ammo persists between levels.
+**Loadout System** (CursorShip + GameScene): W/scroll-up loads a laser cartridge (consumes ammo, fires 4x speed beam). D/scroll-down loads a cluster magnet (places two wall magnets that attract balls for 5s). Middle click unloads. Space/right-click toggles H/V orientation. Ammo persists between levels.
+
+**Demo System** (DemoRecorder + DemoPlaybackBar): Doom-style input recording. Every game auto-records a master RNG seed + per-frame mouse position + action bitfield. On playback, seeds are restored and inputs replayed for deterministic reproduction. All gameplay runs in `_physics_process` (fixed timestep) for frame-rate independence. Entities set `is_active = false` before `queue_free()` to prevent cross-step collisions at high time_scale. Playback speed uses proportional `Engine.physics_ticks_per_second` scaling (2x speed = time_scale 2.0 + physics_fps 120) to keep per-step delta constant. Binary `.sfld` format: header (magic, seed, frame count, metadata) + 10 bytes/frame. Demos tied to high scores; clicking a score plays its demo. Playback bar is a CanvasLayer with seek slider, speed cycling, pause/play, replay, stop. Backward seeking restarts the game and fast-forwards. Debug frame logging available via `DemoRecorder.start_logging()` for desync analysis.
 
 **Procedural Level System** (GameManager, see levels.md): No fixed level definitions. Wildcard slot allocation by difficulty tier, weighted random ball type resolution gated by level number. Surviving balls carry over between levels. No kill/respawn — wildcard slots account for all new balls. Level 10 is a hardcoded Nuke with no wildcards. Level 40+ wildcard formula: `(level/10)*2 - 2`. Infinite progression.
 
 **Signal-Based Communication**: PlayingField emits `FillPercentChanged`, `BarrierCompleted`, `BeamDestroyed`. ScoreManager emits `ScoreChanged`, `LivesChanged`, `MultiplierChanged`, `ExtraLifeEarned`. GameManager emits `LifeLost`. CursorShip emits `LoadLaserRequested`, `LoadMagnetRequested`, `UnloadRequested`, `OrientationChanged`.
 
-**Scene Structure**: Two scenes — `Main.tscn` (menu with 5-page visual tutorial) and `GameScene.tscn` (gameplay). GameScene has PlayingField (with child containers for Balls, PowerUps, ActiveBeam) plus HUD, PauseMenu, GameOverScreen, LevelCompleteOverlay as CanvasLayers.
+**Scene Structure**: Two scenes — `Main.tscn` (menu with 5-page visual tutorial + high scores panel on right) and `GameScene.tscn` (gameplay). GameScene has PlayingField (with child containers for Balls, PowerUps, ActiveBeam) plus HUD, PauseMenu, GameOverScreen, LevelCompleteOverlay as CanvasLayers. DemoPlaybackBar is added dynamically as a CanvasLayer during demo playback.
 
 **Window**: 1024x768, stretch mode `canvas_items`. Playing field at offset (8,24), HUD panel at x:816-1024.
 
@@ -78,6 +81,11 @@ Splitfield is a Godot 4.6 clone of Barrack, the 1996 Ambrosia Software game — 
 - RollingDigitLabel extends Label for arcade-style counter animations on HUD numbers
 - Psychedelic background is a GLSL shader (`psychedelic_bg.gdshader`), rendered on a separate Sprite2D at ZIndex -2
 - Barrier merging: barriers surrounded by filled/barrier on all 8 neighbors render as fill gradient instead of cyan
+- All gameplay logic runs in `_physics_process` (fixed timestep) for demo determinism — beam growth, ball movement, Bosco AI, powerup timers, timed bonus countdown
+- All RNG instances seeded via `DemoRecorder.seed_rng()` which derives deterministic sub-seeds from a master seed; no global `randf()`/`randi()` in gameplay code
+- Entities set `is_active = false` immediately before `queue_free()` to prevent ghost collisions when multiple physics steps run per rendered frame (time_scale > 1)
+- During recording, all input (fire, orientation toggle, weapon load) is deferred to `_physics_process` via action flags — never executed in `_input()` directly — ensuring identical timing in playback
+- High scores stored as `[{score, level, date, demo}]` in `user://highscores.json`; demos in `user://demos/*.sfld`
 
 ## Reference Documents
 
@@ -86,4 +94,4 @@ Splitfield is a Godot 4.6 clone of Barrack, the 1996 Ambrosia Software game — 
 
 ## Implementation Status
 
-Core gameplay is complete. Web export works. Audio has the manager but no sound files. Visual polish (particles, UI textures) and final tuning are still TODO. 5-page visual tutorial with rendered specimens is in the main menu. See `plan.md` for full status.
+Core gameplay is complete. Demo recording/playback system is functional with deterministic replay at multiple speeds. Web export works. Audio has the manager and sound files. Visual polish (particles, UI textures) and final tuning are still TODO. 5-page visual tutorial with rendered specimens is in the main menu. High scores with clickable demo playback are on the main screen. See `plan.md` for full status.
