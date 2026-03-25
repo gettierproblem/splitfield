@@ -54,6 +54,10 @@ var _log_file: FileAccess = null
 var _logging_enabled: bool = false
 var _log_counter: int = 0
 
+# Multi-touch orientation toggle
+var _active_touches: Dictionary = {}  # index -> position
+var _last_multitouch_time: float = 0.0
+
 signal playback_finished()
 signal playback_frame_advanced(frame: int, total: int)
 
@@ -62,10 +66,38 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	# Run before other nodes so playback data is available when they check
 	process_physics_priority = -100
+	set_process_input(true)
+
+
+func _input(event: InputEvent) -> void:
+	# Multi-touch: two fingers toggles orientation
+	if event is InputEventScreenTouch:
+		if event.pressed:
+			_active_touches[event.index] = event.position
+			if _active_touches.size() >= 2:
+				var now := Time.get_ticks_msec() / 1000.0
+				if now - _last_multitouch_time > 0.5:
+					_last_multitouch_time = now
+					record_action(ACT_TOGGLE_ORIENT)
+				_active_touches.clear()
+		else:
+			_active_touches.erase(event.index)
+
+	# Pinch gesture (touchpad / Chrome device emulation)
+	if event is InputEventMagnifyGesture:
+		var now := Time.get_ticks_msec() / 1000.0
+		if now - _last_multitouch_time > 0.5:
+			_last_multitouch_time = now
+			record_action(ACT_TOGGLE_ORIENT)
 
 
 func _physics_process(_delta: float) -> void:
-	if mode == Mode.RECORDING:
+	if mode == Mode.IDLE:
+		# In idle mode (sandbox, etc.), still process pending actions
+		_current_frame_mouse = get_viewport().get_mouse_position()
+		_current_frame_actions = _pending_actions
+		_pending_actions = 0
+	elif mode == Mode.RECORDING:
 		# Only record when game is actually running (not paused via pause menu)
 		# Exception: record ACT_NEXT_LEVEL even when paused (level complete overlay)
 		if not get_tree().paused or _pending_actions & ACT_NEXT_LEVEL:
@@ -126,11 +158,10 @@ func start_recording() -> void:
 
 func record_action(action: int) -> void:
 	## Call from input handlers to log discrete actions this frame.
-	if mode == Mode.RECORDING:
-		_pending_actions |= action
-		# Snapshot mouse position at the moment of the action so fire
-		# position is captured exactly, not at the next physics tick.
-		_action_mouse_pos = get_viewport().get_mouse_position()
+	_pending_actions |= action
+	# Snapshot mouse position at the moment of the action so fire
+	# position is captured exactly, not at the next physics tick.
+	_action_mouse_pos = get_viewport().get_mouse_position()
 
 
 func _record_frame() -> void:
@@ -318,10 +349,8 @@ func get_mouse_position() -> Vector2:
 
 func is_action_this_frame(action: int) -> bool:
 	## Check if an action was performed this physics frame.
-	## Works in both RECORDING and PLAYBACK modes.
-	if mode == Mode.RECORDING or mode == Mode.PLAYBACK:
-		return (_current_frame_actions & action) != 0
-	return false
+	## Works in all modes (IDLE, RECORDING, PLAYBACK).
+	return (_current_frame_actions & action) != 0
 
 
 func is_playback() -> bool:

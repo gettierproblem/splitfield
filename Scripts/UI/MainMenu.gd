@@ -324,9 +324,12 @@ func _build_tutorial_pages() -> void:
 [b]Goal:[/b] Fill 80% or more of the playing field by drawing barriers. Bouncing balls try to destroy your barriers before they complete.
 
 [b]Controls:[/b]
-  [color=cyan]Left Click[/color] — Fire barrier
+  [color=cyan]Left Click / Tap[/color] — Fire barrier
   [color=cyan]Space / Right Click[/color] — Toggle horizontal/vertical orientation
-  [color=cyan]ESC[/color] — Pause
+  [color=cyan]Scroll Up / W[/color] — Load laser cartridge
+  [color=cyan]Scroll Down / D[/color] — Load cluster magnet
+  [color=cyan]Scroll Reverse / Middle Click[/color] — Unload weapon
+  [color=cyan]ESC / Pause button[/color] — Pause
 
 [b]Barrier Charge:[/b]
 Your barrier speed depends on your charge level. Lightning bolt powerups add 5% charge. Getting hit reduces charge by 10%. Charge carries over between levels.
@@ -397,7 +400,7 @@ You can load special weapons using ammo collected from powerups.
 [b]Controls:[/b]
   [color=cyan]W / Scroll Up[/color] — Load a laser cartridge
   [color=cyan]D / Scroll Down[/color] — Load a cluster magnet
-  [color=cyan]Middle Click[/color] — Unload current weapon (returns ammo)
+  Scrolling the opposite direction or [color=cyan]Middle Click[/color] unloads the current weapon.
 
 [b][color=cyan]Laser Cartridge[/color][/b]
   Consumes 1 ammo charge. Your next barrier fires at [b]4x speed[/b], then returns to normal.

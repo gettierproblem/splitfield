@@ -8,12 +8,12 @@ Fire barrier beams across the field to section off space while bouncing balls tr
 
 ## Controls
 
-- **Left click** — fire beam
+- **Left click / tap** — fire beam
 - **Space / Right click** — toggle horizontal/vertical orientation
-- **W / Scroll up** — load laser cartridge (fast beam, uses ammo)
-- **D / Scroll down** — load cluster magnet (attracts balls, uses ammo)
-- **Middle click** — unload
-- **Esc** — pause
+- **Scroll up / W** — load laser cartridge (fast beam, uses ammo)
+- **Scroll down / D** — load cluster magnet (attracts balls, uses ammo)
+- **Scroll reverses / Middle click** — unload (scroll down while laser loaded unloads, etc.)
+- **Esc / Pause button** — pause
 
 ## Demo Replay
 

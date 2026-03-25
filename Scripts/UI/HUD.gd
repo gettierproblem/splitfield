@@ -13,6 +13,9 @@ var _magnet_ammo_label: Label
 var _laser_charge_bar: ProgressBar
 var _laser_charge_label: Label
 
+# Touch toolbar
+var _touch_pause_btn: Button
+
 # Rolling digit displays
 var _score_roller: RollingDigitLabel
 var _lives_roller: RollingDigitLabel
@@ -63,6 +66,9 @@ func _ready() -> void:
 
 	# Create ammo/charge section
 	_create_ammo_section(panel)
+
+	# Create touch toolbar (visible on touch devices)
+	_create_touch_toolbar(panel)
 
 	# Extra life indicator
 	_extra_life_label = Label.new()
@@ -291,6 +297,47 @@ func update_timed_bonus(bonus: int) -> void:
 	else:
 		c = Color(1.0, ratio * 2.0, 0.1)
 	_bonus_roller.add_theme_color_override("font_color", c)
+
+
+func _create_touch_toolbar(panel: Panel) -> void:
+	var base_y: float = 560.0
+
+	var btn_style = StyleBoxFlat.new()
+	btn_style.bg_color = Color(0.12, 0.12, 0.16)
+	btn_style.border_width_left = 1
+	btn_style.border_width_top = 1
+	btn_style.border_width_right = 1
+	btn_style.border_width_bottom = 1
+	btn_style.border_color = Color(0.3, 0.3, 0.35)
+	btn_style.corner_radius_top_left = 4
+	btn_style.corner_radius_top_right = 4
+	btn_style.corner_radius_bottom_left = 4
+	btn_style.corner_radius_bottom_right = 4
+
+	var btn_hover = btn_style.duplicate()
+	btn_hover.bg_color = Color(0.18, 0.18, 0.22)
+
+	# Pause button
+	_touch_pause_btn = Button.new()
+	_touch_pause_btn.text = "Pause"
+	_touch_pause_btn.offset_left = 50
+	_touch_pause_btn.offset_top = base_y
+	_touch_pause_btn.offset_right = 158
+	_touch_pause_btn.offset_bottom = base_y + 35
+	_touch_pause_btn.add_theme_stylebox_override("normal", btn_style)
+	_touch_pause_btn.add_theme_stylebox_override("hover", btn_hover)
+	_touch_pause_btn.add_theme_color_override("font_color", Color(0.7, 0.7, 0.8))
+	_touch_pause_btn.add_theme_font_size_override("font_size", 12)
+	_touch_pause_btn.pressed.connect(_on_touch_pause)
+	panel.add_child(_touch_pause_btn)
+
+
+func _on_touch_pause() -> void:
+	# Simulate pressing the pause action so PauseMenu handles it
+	var event = InputEventAction.new()
+	event.action = "pause"
+	event.pressed = true
+	Input.parse_input_event(event)
 
 
 func _exit_tree() -> void:

@@ -379,14 +379,13 @@ func _spawn_sandbox_entity() -> void:
 			var pu = ScoreMultiplierGD.new()
 			pu.global_position = _field.get_random_empty_position()
 			_field.get_power_ups_container().add_child(pu)
-		"ClusterMagnetPickup":
-			var pu = ClusterMagnetPickupGD.new()
-			pu.global_position = _field.get_random_empty_position()
-			_field.get_power_ups_container().add_child(pu)
-		"AmmoTin":
-			var pu = AmmoTinGD.new()
-			pu.global_position = _field.get_random_empty_position()
-			_field.get_power_ups_container().add_child(pu)
+		"ClusterMagnetPickup", "AmmoTin":
+			var pu_ammo = AmmoTinGD.new()
+			pu_ammo.global_position = _field.get_random_empty_position()
+			_field.get_power_ups_container().add_child(pu_ammo)
+			var pu_mag = ClusterMagnetPickupGD.new()
+			pu_mag.global_position = _field.get_random_empty_position()
+			_field.get_power_ups_container().add_child(pu_mag)
 		"LifeKey":
 			var pu = LifeKeyGD.new()
 			pu.global_position = _field.get_random_empty_position()

@@ -12,6 +12,8 @@ var _vertical: bool = false
 var _visible: bool = true
 var _loaded_weapon: int = WeaponType.LASER_CARTRIDGE
 var _has_charged_shot: bool = false
+var _last_scroll_time: float = 0.0
+const SCROLL_DEBOUNCE: float = 0.3  # seconds before scroll-down can load magnet after unload
 
 var is_vertical: bool:
 	get: return _vertical
@@ -87,11 +89,18 @@ func _input(event: InputEvent) -> void:
 		if mouse_event.button_index == MOUSE_BUTTON_RIGHT:
 			DemoRecorder.record_action(DemoRecorder.ACT_TOGGLE_ORIENT)
 		elif mouse_event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			DemoRecorder.record_action(DemoRecorder.ACT_LOAD_LASER)
+			_handle_scroll_up()
 		elif mouse_event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			DemoRecorder.record_action(DemoRecorder.ACT_LOAD_MAGNET)
+			_handle_scroll_down()
 		elif mouse_event.button_index == MOUSE_BUTTON_MIDDLE:
 			DemoRecorder.record_action(DemoRecorder.ACT_UNLOAD)
+
+	# Touchpad pan gesture → treat as scroll wheel
+	if event is InputEventPanGesture:
+		if event.delta.y < -0.5:
+			_handle_scroll_up()
+		elif event.delta.y > 0.5:
+			_handle_scroll_down()
 
 	if event is InputEventKey and event.pressed and not event.echo:
 		var key_event: InputEventKey = event as InputEventKey
@@ -102,6 +111,31 @@ func _input(event: InputEvent) -> void:
 				DemoRecorder.record_action(DemoRecorder.ACT_LOAD_LASER)
 			KEY_D:
 				DemoRecorder.record_action(DemoRecorder.ACT_LOAD_MAGNET)
+
+
+func _handle_scroll_up() -> void:
+	if _loaded_weapon == WeaponType.CLUSTER_MAGNET:
+		DemoRecorder.record_action(DemoRecorder.ACT_UNLOAD)
+		_last_scroll_time = Time.get_ticks_msec() / 1000.0
+	elif not _has_charged_shot:
+		var now = Time.get_ticks_msec() / 1000.0
+		if now - _last_scroll_time > SCROLL_DEBOUNCE:
+			DemoRecorder.record_action(DemoRecorder.ACT_LOAD_LASER)
+			_last_scroll_time = now
+
+
+func _handle_scroll_down() -> void:
+	if _has_charged_shot:
+		DemoRecorder.record_action(DemoRecorder.ACT_UNLOAD)
+		_last_scroll_time = Time.get_ticks_msec() / 1000.0
+	elif _loaded_weapon == WeaponType.CLUSTER_MAGNET:
+		# Already magnet — ignore
+		pass
+	else:
+		var now = Time.get_ticks_msec() / 1000.0
+		if now - _last_scroll_time > SCROLL_DEBOUNCE:
+			DemoRecorder.record_action(DemoRecorder.ACT_LOAD_MAGNET)
+			_last_scroll_time = now
 
 
 func _draw() -> void:

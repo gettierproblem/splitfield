@@ -200,10 +200,11 @@ offset_right = 200.0
 offset_bottom = 535.0
 theme_override_font_sizes/font_size = 10
 theme_override_colors/font_color = Color(0.5, 0.5, 0.6, 1)
-text = "Space / Right Click: Toggle Direction
-W: Laser Cartridge
-D: Cluster Magnet
-Click: Fire | ESC: Pause"
+text = "Toggle Direction: Space / Right Click
+Laser Cartridge: Scroll Up / W
+Cluster Magnet: Scroll Down / D
+Fire: Click
+Pause: Esc"
 
 [node name="PauseMenu" type="CanvasLayer" parent="."]
 script = ExtResource("4")
