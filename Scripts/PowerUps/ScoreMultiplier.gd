@@ -108,6 +108,10 @@ func _collect_multiplier() -> void:
 	queue_free()
 
 
+func collected_by_growing_beam() -> bool:
+	return false
+
+
 func apply_effect() -> void:
 	# Handled by _collect_multiplier
 	pass

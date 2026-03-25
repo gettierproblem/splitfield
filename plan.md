@@ -379,7 +379,7 @@ public partial class LevelData : Resource
 - [x] OrangeBall — momentum absorption
 - [x] NukeBall — detonates when trapped, destroys nearby balls
 - [x] OozeBall — time bomb, splits into Pawns/Nukes if not trapped
-- [x] GlassBall — durability (3 hits) and shattering
+- [x] GlassBall — durability (3 hits) and shattering; takes crack damage from growing beams (beam still destroyed, life lost)
 - [x] Eyeball (Sentry Eye) — cursor-tracking, hunts barrier gun
 - [x] GravityBall — downward acceleration
 - [x] Bosco — shark fin, moves through everything, dies when isolated (800 pts)
@@ -393,7 +393,8 @@ public partial class LevelData : Resource
 - [x] Explosives (destroys random balls)
 - [x] Score Multiplier (2x, 12s)
 - [x] Super Quick Laser (3x beam speed, 15s)
-- [x] Collection when area filled
+- [x] Collection when area filled or touching growing beam (except Score Multiplier)
+- [x] Yummie Cake auto-detonates after 2s fuse, spawning 4-7 child powerups
 - [x] Loadout system: W/scroll-up loads laser (charged fast shot), D/scroll-down loads magnet
 - [x] Cluster magnets: wall-mounted, line-of-sight, 5s duration, 1600 pull strength
 - [x] Middle click to unload, HUD loadout section (charge bar, ammo, magnets)
@@ -430,11 +431,11 @@ public partial class LevelData : Resource
 - [ ] Level transition animations
 
 ### Phase 11: Procedural Level System — DONE
-- [x] Kill/respawn tracking (aggressive clearing = more respawns)
 - [x] Ball carryover between levels (survivors persist)
-- [x] Wildcard slot allocation by difficulty tier (L1:2, L2-9:1, L10-19:2, L20-29:3, etc.)
-- [x] Weighted random wildcard resolution (Bosco at L5/10/18, Ooze at L11+, etc.)
-- [x] Difficulty tiers affect ball speed multiplier
+- [x] Wildcard slot allocation by difficulty tier (L1:2, L2-9:1, L10:hardcoded Nuke, L11-19:2, L20-29:3, L30-39:4, L40+:(lvl/10)*2-2)
+- [x] Weighted random wildcard resolution (Nuke at L5/10/18, Ooze 33% no level gate, Glass L15+, Orange L16+, Sentry L20+)
+- [x] No kill/respawn — wildcard slots account for all new balls per level (per levels.md)
+- [x] Difficulty tiers affect ball speed multiplier (L1:2, L2-9:1, L10-19:2, L20-29:3, L30-39:4, L40+:lvl/10+1)
 - [x] Timed bonus scaling (3000+100/level start, 10+1/level decay)
 - [x] Infinite level progression (no fixed cap)
 - [ ] Play-testing and balance tuning

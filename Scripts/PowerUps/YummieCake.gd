@@ -6,6 +6,8 @@ extends PowerUpBase
 ## If it lands in already-cleared area, it sinks and is wasted.
 
 var _detonated: bool = false
+var _cake_timer: float = 0.0
+const CAKE_FUSE: float = 2.0
 
 
 func _ready() -> void:
@@ -49,6 +51,11 @@ func _process(delta: float) -> void:
 	if _detonated:
 		return
 
+	_cake_timer += delta
+	if _cake_timer >= CAKE_FUSE:
+		_detonate()
+		return
+
 	if field != null:
 		var cell = field.get_cell_at_world(global_position)
 		if cell == PlayingField.CellState.FILLED:
@@ -58,17 +65,11 @@ func _process(delta: float) -> void:
 			queue_free()
 			return
 
-		# Check barrier hit or just detonate after brief delay
+		# Check barrier hit — detonate early
 		var center_cell = field.world_to_grid(global_position)
 		if field.is_growing(center_cell):
 			_detonate()
 			return
-
-	# Also detonate if enclosed
-	if field != null:
-		var cell = field.get_cell_at_world(global_position)
-		if cell == PlayingField.CellState.FILLED:
-			_detonate()
 
 
 func _detonate() -> void:
@@ -77,6 +78,10 @@ func _detonate() -> void:
 	_detonated = true
 
 	AudioManager.play_sfx("cake_detonate")
+
+	if field == null:
+		queue_free()
+		return
 
 	var rng = RandomNumberGenerator.new()
 	rng.randomize()

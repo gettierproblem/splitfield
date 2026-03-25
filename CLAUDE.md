@@ -53,7 +53,7 @@ Splitfield is a Godot 4.6 clone of Barrack, the 1996 Ambrosia Software game — 
 
 **Loadout System** (CursorShip + GameScene): W/scroll-up loads a laser cartridge (consumes ammo, fires 4x speed beam). D/scroll-down loads a cluster magnet (places two wall magnets that attract balls for 5s). Middle click unloads. Tab toggles H/V orientation. Ammo persists between levels.
 
-**Procedural Level System** (GameManager, see levels.md): No fixed level definitions. Kill/respawn tracking, wildcard slot allocation by difficulty tier, weighted random ball type resolution gated by level number. Surviving balls carry over between levels. Infinite progression.
+**Procedural Level System** (GameManager, see levels.md): No fixed level definitions. Wildcard slot allocation by difficulty tier, weighted random ball type resolution gated by level number. Surviving balls carry over between levels. No kill/respawn — wildcard slots account for all new balls. Level 10 is a hardcoded Nuke with no wildcards. Level 40+ wildcard formula: `(level/10)*2 - 2`. Infinite progression.
 
 **Signal-Based Communication**: PlayingField emits `FillPercentChanged`, `BarrierCompleted`, `BeamDestroyed`. ScoreManager emits `ScoreChanged`, `LivesChanged`, `MultiplierChanged`, `ExtraLifeEarned`. GameManager emits `LifeLost`. CursorShip emits `LoadLaserRequested`, `LoadMagnetRequested`, `UnloadRequested`, `OrientationChanged`.
 
@@ -64,9 +64,11 @@ Splitfield is a Godot 4.6 clone of Barrack, the 1996 Ambrosia Software game — 
 ## Key Patterns
 
 - Grid collision is O(1) cell lookups, not collision shapes
-- PowerUps inherit from `PowerUpBase`, collected when enclosed by filled area
+- PowerUps inherit from `PowerUpBase`, collected when enclosed by filled area or when touching a growing beam
 - PowerUps spawn every 5s, weighted random selection (Lightning most frequent, Score Multiplier second), only one active at a time (Score Multiplier doesn't block others; only one per level)
 - Score Multiplier collected by barrier touch (not growing beam), applies to bonus at level end screen, resets to 1x
+- Yummie Cake auto-detonates after 2 seconds, spawning 4-7 child powerups; also detonates early on growing beam contact
+- Glass balls take crack damage when hitting a growing beam (beam is still destroyed, life lost)
 - Barrier charge persists between levels (stored on GameManager), lightning bolt adds 5%, life loss reduces 10%
 - Ammo (laser cartridges + cluster magnets) persists between levels, +10 per pickup
 - Completing a barrier awards rounded %contained x 10 as regular score

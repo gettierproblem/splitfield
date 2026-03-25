@@ -97,9 +97,12 @@ func _move_bounce(dt: float) -> void:
 	else:
 		pos.y = next_y
 
-	# Bounce off growing beams too
+	# Growing beams: collect on contact (unless overridden)
 	var center_cell = field.world_to_grid(pos)
 	if field.is_growing(center_cell):
+		if collected_by_growing_beam():
+			collect()
+			return
 		direction = -direction
 		pos = global_position  # Revert position
 		AudioManager.play_sfx("yummy_bounce")
@@ -128,6 +131,11 @@ func _move_bounce(dt: float) -> void:
 		AudioManager.play_sfx("yummy_bounce")
 
 	global_position = pos
+
+
+## Whether this powerup is collected by touching a growing beam.
+func collected_by_growing_beam() -> bool:
+	return true
 
 
 func collect() -> void:

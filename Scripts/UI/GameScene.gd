@@ -292,15 +292,6 @@ func _spawn_balls_for_level() -> void:
 			ball.speed *= speed_mult
 			balls_container.add_child(ball)
 
-	# Ensure at least some balls on level 1
-	if GameManager.current_level == 1 and balls_container.get_child_count() < 4:
-		var needed: int = 4 - balls_container.get_child_count()
-		for i in range(needed):
-			var pawn = PawnBallGD.new()
-			pawn.global_position = _field.get_random_empty_position()
-			pawn.speed *= speed_mult
-			balls_container.add_child(pawn)
-
 	# Clear kill counts for this level
 	GameManager.clear_kill_counts()
 

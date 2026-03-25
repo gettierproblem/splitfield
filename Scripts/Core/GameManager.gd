@@ -61,7 +61,7 @@ func get_difficulty_tier() -> int:
 		return 3
 	if current_level <= 39:
 		return 4
-	return current_level / 10 - 2
+	return current_level / 10 + 1
 
 
 ## Get wildcard slot count for current level.
@@ -71,13 +71,15 @@ func _get_wildcard_slot_count() -> int:
 		return 2
 	if lvl <= 9:
 		return 1
+	if lvl == 10:
+		return 0  # Level 10: hardcoded Nuke only, no wildcards
 	if lvl <= 19:
 		return 2
 	if lvl <= 29:
 		return 3
 	if lvl <= 39:
 		return 4
-	return lvl / 10 - 2
+	return (lvl / 10) * 2 - 2
 
 
 ## Resolve a wildcard slot to a concrete ball type name using
@@ -119,26 +121,17 @@ func _resolve_wildcard(slot_index: int, total_balls: int) -> String:
 
 
 ## Generate the list of new balls to spawn for the current level.
-## This includes wildcard resolution + kill/respawn.
+## Wildcard resolution only — per levels.md, respawn counters contribute no additional balls.
 func generate_new_balls_for_level() -> Array:
 	var new_balls: Array = []
 
-	# Step 1: Kill/respawn — for each type killed, spawn random(0, kill_count)
-	for ball_type in _kill_counts:
-		if ball_type == "Bosco":
-			continue  # Bosco has own spawn system
-		var respawn_count := _rng.randi_range(0, _kill_counts[ball_type])
-		for i in range(respawn_count):
-			new_balls.append(ball_type)
-
-	# Step 2: Wildcard slots
-	var wildcards := _get_wildcard_slot_count()
-
-	# Special case: level 10 — hardcoded Nuke (Nuke + Bosco introduction per levels.md)
+	# Special case: level 10 — hardcoded Nuke, no wildcards
 	if current_level == 10:
 		new_balls.append("NukeBall")
-		wildcards -= 1  # One slot used for the hardcoded Nuke
+		return new_balls
 
+	# Wildcard slots
+	var wildcards := _get_wildcard_slot_count()
 	var total_balls: int = _surviving_balls.size() + new_balls.size()
 	for i in range(wildcards):
 		var type := _resolve_wildcard(i, total_balls + i)

@@ -106,11 +106,9 @@ func move(delta: float) -> void:
 		if should_bounce_on_cell(check_x):
 			direction.x = -direction.x
 		elif field.is_growing(check_x):
-			# Hit the growing beam - destroy it and bounce
 			direction.x = -direction.x
-			field.on_beam_destroyed()
-			GameManager.on_life_lost()
-			return
+			if not _on_hit_growing_beam():
+				return
 		else:
 			pos.x = next_x
 
@@ -121,18 +119,16 @@ func move(delta: float) -> void:
 			direction.y = -direction.y
 		elif field.is_growing(check_y):
 			direction.y = -direction.y
-			field.on_beam_destroyed()
-			GameManager.on_life_lost()
-			return
+			if not _on_hit_growing_beam():
+				return
 		else:
 			pos.y = next_y
 
 		# Also check the cell the ball center is on
 		var center_cell = field.world_to_grid(pos)
 		if field.is_growing(center_cell):
-			field.on_beam_destroyed()
-			GameManager.on_life_lost()
-			return
+			if not _on_hit_growing_beam():
+				return
 
 		# Boundary clamping
 		var field_min = field.global_position + Vector2(radius, radius)
@@ -156,6 +152,14 @@ func move(delta: float) -> void:
 
 func should_bounce_on_cell(cell: Vector2i) -> bool:
 	return field.is_blocking(cell)
+
+
+## Called when this ball hits a growing beam. Return true to keep moving, false to stop.
+## Default: destroy beam and cost a life.
+func _on_hit_growing_beam() -> bool:
+	field.on_beam_destroyed()
+	GameManager.on_life_lost()
+	return false
 
 
 func on_hit_by_nuke() -> void:

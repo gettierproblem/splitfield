@@ -148,6 +148,19 @@ func _shatter() -> void:
 	queue_free()
 
 
+func _on_hit_growing_beam() -> bool:
+	_hits += 1
+	_crack_angles.append(randf_range(0, TAU))
+	AudioManager.play_sfx("glass_shatter")
+	queue_redraw()
+	if _hits >= durability:
+		_shatter()
+	# Beam is also destroyed and life lost
+	field.on_beam_destroyed()
+	GameManager.on_life_lost()
+	return false
+
+
 func on_hit_by_nuke() -> void:
 	ScoreManager.add_regular_score(500)
 	AudioManager.play_sfx("glass_shatter")

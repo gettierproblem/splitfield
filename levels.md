@@ -1,6 +1,6 @@
-# Splitfield Level System
+# Barrack Level System
 
-Splitfield does not use fixed level definitions. Levels are procedurally generated through three interacting systems: kill/respawn tracking, wildcard slot allocation, and weighted random type resolution. This means no two playthroughs are exactly alike after the first few levels.
+Barrack does not use fixed level definitions. Levels are procedurally generated through two systems: wildcard slot allocation and weighted random type resolution. Surviving balls from the previous level carry over, and new balls are added via wildcard slots. This means no two playthroughs are exactly alike after the first few levels.
 
 ## Ball Types
 
@@ -32,35 +32,25 @@ Each record spawns exactly one ball. A value of -1 means "resolve randomly at sp
 
 ## How Levels Are Built
 
-### Step 1: Kill/Respawn
+### Step 1: Wildcard Slot Allocation
 
-When you destroy balls during a level, the game tracks what types you killed. At the start of the next level, for each type you killed, the game spawns `random(0, kill_count)` balls of that type.
+The level builder (68K 0x833E) adds new ball records to the level table. The number of new "wildcard" records (all six fields set to -1) is determined by a tier system based on the current level number:
 
-This creates an adaptive difficulty loop: aggressively clearing nukes means more nukes come back. Leaving dangerous balls alive means fewer replacements but a more crowded field.
+| Level | New Balls | Notes |
+|-------|-----------|-------|
+| 1 | 2 wildcards | Tutorial-like opening |
+| 2-9 | 1 wildcard | Slow ramp |
+| 10 | 1 Nuke (hardcoded) | Type=3 record, no wildcards (skips wildcard loop entirely) |
+| 11-19 | 2 wildcards | Mid-game |
+| 20-29 | 3 wildcards | Late-game |
+| 30-39 | 4 wildcards | Endurance |
+| 40+ | (level/10)*2 - 2 wildcards | Scales indefinitely (level 40=6, 50=8, 60=10) |
 
-Kill counter memory map:
-- A5+0x86A0 = Pawn (type 2) kills
-- A5+0x869E = Nuke (type 3) kills
-- A5+0x869C = Orange (type 4) kills
-- A5+0x869A = Sentry (type 7) kills
-- A5+0x8698 = Ooze (type 5) kills
-- A5+0x8696 = Glass (type 6) kills
+Total balls on field each level = survivors from previous level + new balls from table above.
 
-### Step 2: Wildcard Slot Allocation
+The level builder also contains a "respawn" phase (68K 0x834C-83AC) that reads 6 per-type counters at A5+0x8696..0x86A0 and passes them to a spawn function at 0x13E9E. However, these counters appear to be zero at level start (they are cleared at game init and track active ball counts via increment-on-spawn / decrement-on-death during gameplay). Playtesting confirms this phase contributes no additional balls — the wildcard slots above account for all new balls per level.
 
-The game adds a number of "wildcard" level records (all six fields set to -1) based on a difficulty tier system:
-
-| Level | Wildcard Slots | Notes |
-|-------|---------------|-------|
-| 1 | 2 | Tutorial-like opening |
-| 2-9 | 1 | Slow ramp |
-| 10 | Special | Nuke + Bosco introduction (hardcoded record: field 0 = 3 (Nuke), rest = -1) |
-| 10-19 | 2 | Mid-game |
-| 20-29 | 3 | Late-game |
-| 30-39 | 4 | Endurance |
-| 40+ | level/10 - 2 | Scales indefinitely |
-
-### Step 3: Wildcard Resolution
+### Step 2: Wildcard Resolution
 
 Each record where field[0] == -1 is resolved to a concrete ball type using weighted random selection gated by the level number. The resolver checks conditions in priority order:
 
@@ -92,6 +82,33 @@ Fields 1-5 (velocity, position, behavior) are resolved independently: if -1, the
 | 16 | Orange (random, ~10% per slot) |
 | 18 | Nuke (guaranteed via cascade) + Bosco |
 | 20 | Sentry Eye |
+
+## New Balls Per Level Reference
+
+| Level | New Balls | Guaranteed Types | Possible Types via Cascade |
+|-------|-----------|-----------------|---------------------------|
+| 1 | 2 | 2 Pawn | — |
+| 2 | 1 | 1 Pawn | — |
+| 3 | 1 | 1 Pawn | — |
+| 4 | 1 | 1 Pawn | — |
+| 5 | 1 | 1 Nuke | — |
+| 6 | 1 | 1 Pawn | — |
+| 7 | 1 | 1 Pawn | — |
+| 8 | 1 | 1 Pawn | — |
+| 9 | 1 | 1 Pawn | — |
+| 10 | 1 | 1 Nuke (hardcoded) | — |
+| 11-14 | 2 | — | Pawn, Ooze (~33%) |
+| 15 | 2 | — | Pawn, Ooze (~33%), Glass (~10%) |
+| 16-17 | 2 | — | Pawn, Ooze (~33%), Glass (~10%), Orange (~10%) |
+| 18 | 2 | 1 Nuke (via cascade) | + Pawn/Ooze/Glass/Orange |
+| 19 | 2 | — | full mix |
+| 20 | 3 | 1+ Sentry | + full mix |
+| 21-29 | 3 | — | full mix (Sentry ~12.5%) |
+| 30-39 | 4 | — | full mix |
+| 40 | 6 | — | full mix |
+| 50 | 8 | — | full mix |
+
+These are new balls only. Total balls on field = survivors from previous level + new balls above. Levels 1-9 are deterministic (always Pawn except level 5 Nuke). From level 11 onward, the cascade introduces randomness.
 
 ## Bosco the Shark
 
@@ -226,32 +243,15 @@ Points earned per percentage of screen cleared:
 
 ### Other Bonuses
 
-- Barrier completion: rounded %contained × 10 pts (regular score)
 - Nuke detonation: 500 pts per destroyed ball
 - Ball isolation: 100 pts per ball
 - Time bonus: starts at 3,000, +100 per level
 - Bosco kill: 800 pts (regular), 2,500 pts (glass), 5,000 pts (nuke)
 - Bosco kill during rampage: 10x multiplier
-- Score Multiplier powerup: collected value (0.5x/2x/3x/4x) applies to total bonus at level end, then resets to 1x. Only one spawns per level.
-
-### Power-Up Spawning
-
-Power-ups spawn every 5 seconds, selected randomly with weighted probabilities. All types available from level 1:
-
-| Power-Up | Weight | Effect |
-|----------|--------|--------|
-| Lightning Bolt | 40 | +5% barrier charge (persists between levels; -10% on life loss) |
-| Score Multiplier | 20 | Cycles 0.5x/2x/3x/4x; applied to bonus at level end. One per level. Does not block other spawns. |
-| Cluster Magnet Pickup | 8 | +10 cluster magnet charges |
-| Ammo Tin | 8 | +10 laser cartridge charges |
-| Yummie Cake | 6 | Detonates on barrier hit, spawns child yummies |
-| Life Key | 5 | +1-5 extra lives |
-
-A new power-up will not spawn until the previous one is collected or expires (Score Multiplier excluded from this check). Score Multiplier is collected when a completed barrier touches it (not by growing beam). Ammo (laser + magnets) persists between levels.
 
 ## Visual Themes
 
-10 foreground/background pattern pairs cycle every 10 levels. Each pair uses a distinct 256-color palette stored as `ppat` and `clut` resources in the original Barrack Titles file.
+10 foreground/background pattern pairs cycle every 10 levels. Each pair uses a distinct 256-color palette stored as `ppat` and `clut` resources in the Barrack Titles file.
 
 ## Implementation Details
 
@@ -268,7 +268,9 @@ A new power-up will not spawn until the previous one is collected or expires (Sc
 - Store function (68K): CODE offset 0x8308
 - Level builder (68K): CODE offset 0x833E
 - Wildcard resolver (68K): CODE offset 0x7F9C (setup at 0x7FA0)
-- Kill/respawn recorder (68K): CODE offset 0x89A0
+- Active ball counter function (68K): CODE offset 0x86A4 (decrement on death), 0x782C-784A (increment on spawn)
+- Per-type counters: A5+0x86A0 (Pawn), 0x869E (Nuke), 0x869C (Orange), 0x869A (Sentry), 0x8698 (Ooze), 0x8696 (Glass)
+- Spawn function (68K): CODE offset 0x13E9E (deterministic, spawns exactly count balls — no randomness)
 - Record size: 12 bytes (6 x int16, big-endian)
 - Sentinel value: -1 (0xFFFF) = resolve at spawn time
 - Level 10 boss record: written directly to level table using indexed addressing `(d8, A0, D3.L)` at 68K offsets 0x8400-0x841E
