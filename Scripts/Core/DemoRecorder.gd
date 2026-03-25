@@ -70,6 +70,11 @@ func _ready() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	# Request fullscreen on first touch for mobile web
+	if event is InputEventScreenTouch and event.pressed:
+		if OS.has_feature("web") and DisplayServer.window_get_mode() != DisplayServer.WINDOW_MODE_FULLSCREEN:
+			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+
 	# Multi-touch: two fingers toggles orientation
 	if event is InputEventScreenTouch:
 		if event.pressed:
@@ -79,6 +84,8 @@ func _input(event: InputEvent) -> void:
 				if now - _last_multitouch_time > 0.5:
 					_last_multitouch_time = now
 					record_action(ACT_TOGGLE_ORIENT)
+					# Suppress fire from the first finger
+					_pending_actions &= ~ACT_FIRE
 				_active_touches.clear()
 		else:
 			_active_touches.erase(event.index)
@@ -89,6 +96,7 @@ func _input(event: InputEvent) -> void:
 		if now - _last_multitouch_time > 0.5:
 			_last_multitouch_time = now
 			record_action(ACT_TOGGLE_ORIENT)
+			_pending_actions &= ~ACT_FIRE
 
 
 func _physics_process(_delta: float) -> void:
