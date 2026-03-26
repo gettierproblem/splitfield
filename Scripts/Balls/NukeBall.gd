@@ -6,7 +6,7 @@ extends BallBaseGD
 ## Other balls bounce off it normally (handled by BallBase).
 
 const GRAVITY: float = 400.0  # pixels/s^2 — ~9.8 m/s^2 game equivalent
-const DETONATION_THRESHOLD: int = 800
+const DETONATION_THRESHOLD: int = 1000
 var _near_detonation: bool = false
 var _redraw_timer: float = 0.0
 var _velocity: Vector2 = Vector2.ZERO

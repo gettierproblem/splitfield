@@ -552,6 +552,92 @@ func _count_isolated_balls() -> int:
 ## Flood fill from a grid position to measure the empty region size
 ## and find all balls within that same region.
 ## Returns {"size": int, "balls": Array[BallBaseGD]}
+## Returns the distance in pixels from a grid position to the nearest wall
+## in each cardinal direction, plus the balls in the same region.
+func get_wall_distances(seed_pos: Vector2i) -> Dictionary:
+	var result: Dictionary = {"left": 0, "right": 0, "up": 0, "down": 0, "min": 0, "balls": [], "valid": false}
+	if not in_bounds(seed_pos) or _grid[_gi(seed_pos.x, seed_pos.y)] != CellState.EMPTY:
+		return result
+
+	# Scan left
+	var dist_left: int = 0
+	for x in range(seed_pos.x - 1, -1, -1):
+		if _grid[_gi(x, seed_pos.y)] != CellState.EMPTY:
+			break
+		dist_left += 1
+	# Scan right
+	var dist_right: int = 0
+	for x in range(seed_pos.x + 1, GRID_WIDTH):
+		if _grid[_gi(x, seed_pos.y)] != CellState.EMPTY:
+			break
+		dist_right += 1
+	# Scan up
+	var dist_up: int = 0
+	for y in range(seed_pos.y - 1, -1, -1):
+		if _grid[_gi(seed_pos.x, y)] != CellState.EMPTY:
+			break
+		dist_up += 1
+	# Scan down
+	var dist_down: int = 0
+	for y in range(seed_pos.y + 1, GRID_HEIGHT):
+		if _grid[_gi(seed_pos.x, y)] != CellState.EMPTY:
+			break
+		dist_down += 1
+
+	result["left"] = dist_left * CELL_SIZE
+	result["right"] = dist_right * CELL_SIZE
+	result["up"] = dist_up * CELL_SIZE
+	result["down"] = dist_down * CELL_SIZE
+	result["min"] = mini(mini(dist_left, dist_right), mini(dist_up, dist_down)) * CELL_SIZE
+	result["valid"] = true
+
+	# Find balls in the same region (BFS)
+	var si: int = _gi(seed_pos.x, seed_pos.y)
+	var total: int = GRID_WIDTH * GRID_HEIGHT
+	var visited: PackedByteArray = PackedByteArray()
+	visited.resize(total)
+	visited.fill(0)
+	var queue: PackedInt32Array = PackedInt32Array()
+	var qh: int = 0
+	visited[si] = 1
+	queue.push_back(si)
+	while qh < queue.size():
+		var idx: int = queue[qh]
+		qh += 1
+		@warning_ignore("integer_division")
+		var x: int = idx / GRID_HEIGHT
+		var y: int = idx % GRID_HEIGHT
+		if x > 0:
+			var ni: int = idx - GRID_HEIGHT
+			if visited[ni] == 0 and _grid[ni] == CellState.EMPTY:
+				visited[ni] = 1
+				queue.push_back(ni)
+		if x < GRID_WIDTH - 1:
+			var ni: int = idx + GRID_HEIGHT
+			if visited[ni] == 0 and _grid[ni] == CellState.EMPTY:
+				visited[ni] = 1
+				queue.push_back(ni)
+		if y > 0:
+			var ni: int = idx - 1
+			if visited[ni] == 0 and _grid[ni] == CellState.EMPTY:
+				visited[ni] = 1
+				queue.push_back(ni)
+		if y < GRID_HEIGHT - 1:
+			var ni: int = idx + 1
+			if visited[ni] == 0 and _grid[ni] == CellState.EMPTY:
+				visited[ni] = 1
+				queue.push_back(ni)
+
+	if _balls_container != null:
+		for child in _balls_container.get_children():
+			if child is BallBaseGD and is_instance_valid(child):
+				var ball_grid: Vector2i = world_to_grid(child.global_position)
+				if in_bounds(ball_grid) and visited[_gi(ball_grid.x, ball_grid.y)] == 1:
+					result["balls"].append(child)
+
+	return result
+
+
 func get_region_size(seed_pos: Vector2i) -> Dictionary:
 	var result: Dictionary = {"size": 0, "balls": []}
 	var si: int = _gi(seed_pos.x, seed_pos.y)

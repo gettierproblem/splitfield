@@ -75,7 +75,7 @@ Splitfield is a Godot 4.6 clone of Barrack, the 1996 Ambrosia Software game — 
 - Barrier charge persists between levels (stored on GameManager), lightning bolt adds 5%, life loss reduces 10%
 - Ammo (laser cartridges + cluster magnets) persists between levels, +10 per pickup
 - Completing a barrier awards rounded %contained x 10 as regular score
-- Nuke balls bounce with gravity, detonate when region ≤800 cells, destroying all balls in same region
+- Nuke balls bounce with gravity, detonate when region ≤1000 cells, destroying all balls in same region
 - Bosco only dies when caught in newly enclosed area (not existing filled areas)
 - ClusterMagnet uses Bresenham line-of-sight + next-cell check to prevent pulling balls through barriers
 - RollingDigitLabel extends Label for arcade-style counter animations on HUD numbers
