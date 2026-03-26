@@ -72,11 +72,9 @@ text = "Quit"
 
 [node name="HighScoresPanel" type="Panel" parent="."]
 layout_mode = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -420.0
+offset_left = 550.0
 offset_top = 140.0
-offset_right = -30.0
+offset_right = 940.0
 offset_bottom = 700.0
 
 [node name="TitleLabel" type="Label" parent="HighScoresPanel"]

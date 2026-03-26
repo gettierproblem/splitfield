@@ -59,11 +59,9 @@ script = ExtResource("2")
 script = ExtResource("3")
 
 [node name="HUDPanel" type="Panel" parent="HUD"]
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -208.0
+offset_left = 816.0
 offset_top = 0.0
-offset_right = 0.0
+offset_right = 1024.0
 offset_bottom = 768.0
 mouse_filter = 2
 

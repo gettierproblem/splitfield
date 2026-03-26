@@ -77,10 +77,8 @@ func _ready() -> void:
 	_extra_life_label.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3))
 	_extra_life_label.add_theme_font_size_override("font_size", 20)
 	_extra_life_label.visible = false
-	_extra_life_label.anchor_left = 1.0
-	_extra_life_label.anchor_right = 1.0
-	_extra_life_label.offset_left = -208.0
-	_extra_life_label.offset_right = 0.0
+	_extra_life_label.offset_left = 816.0
+	_extra_life_label.offset_right = 1024.0
 	_extra_life_label.offset_top = 120.0
 	_extra_life_label.offset_bottom = 145.0
 	add_child(_extra_life_label)
