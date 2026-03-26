@@ -435,6 +435,7 @@ func _on_fill_percent_changed(percent: float) -> void:
 	var level_data = GameManager.get_current_level_data()
 	if percent >= level_data.required_fill_percent:
 		_level_complete = true
+		_hud.update_fill(percent, true)
 
 		if GameManager.sandbox_entity != "":
 			AudioManager.stop_music()

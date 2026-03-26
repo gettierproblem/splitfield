@@ -252,8 +252,8 @@ func _on_extra_life_earned() -> void:
 	AudioManager.play_sfx("extra_life")
 
 
-func update_fill(percent: float) -> void:
-	_fill_roller.set_value(int(percent))
+func update_fill(percent: float, instant: bool = false) -> void:
+	_fill_roller.set_value(int(percent), instant)
 
 
 func update_weapon(weapon) -> void:
